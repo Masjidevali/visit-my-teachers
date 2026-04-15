@@ -33,7 +33,7 @@ export default function CheckinPage({ params }: { params: Promise<{ id: string }
   const [scanning, setScanning] = useState(false);
   const scannerRef = useRef<HTMLDivElement>(null);
   const html5QrRef = useRef<unknown>(null);
-  const searchTimer = useRef<ReturnType<typeof setTimeout>>();
+  const searchTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const loadBookings = useCallback(async () => {
     const res = await fetch(`/api/checkin?eventId=${eventId}`);
