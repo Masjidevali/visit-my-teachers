@@ -18,13 +18,28 @@ function HomeContent() {
   const [bookingRef, setBookingRef] = useState('');
   const [showLookup, setShowLookup] = useState(false);
   const [confirmStudent, setConfirmStudent] = useState<{ name: string; className: string; year: string } | null>(null);
-  const [showInstallTip, setShowInstallTip] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<{ prompt: () => void } | null>(null);
+  const [showIOSTip, setShowIOSTip] = useState(false);
+  const [installDismissed, setInstallDismissed] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || ('standalone' in navigator && (navigator as unknown as { standalone: boolean }).standalone);
-    setShowInstallTip(isIOS && !isStandalone);
+    if (isStandalone) return;
+
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (isIOS) {
+      setShowIOSTip(true);
+      return;
+    }
+
+    // Android: capture the install prompt
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e as unknown as { prompt: () => void });
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -213,16 +228,39 @@ function HomeContent() {
         </div>
       )}
 
+      {/* Install App Banner */}
+      {installPrompt && !installDismissed && (
+        <div className="mx-4 mb-2 bg-card border border-card-border rounded-xl px-4 py-3 flex items-center gap-3 max-w-md self-center shadow-sm">
+          <img src="/icon-192.png" alt="" className="w-10 h-10 rounded-lg shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-heading">Visit-My-Teachers</p>
+            <p className="text-xs text-secondary">Install the app for quick access</p>
+          </div>
+          <button
+            onClick={() => { installPrompt.prompt(); setInstallDismissed(true); }}
+            className="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:bg-primary-light transition-colors shrink-0"
+          >
+            Install
+          </button>
+          <button onClick={() => setInstallDismissed(true)} className="text-muted hover:text-secondary shrink-0">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {/* iOS Install Tip */}
-      {showInstallTip && (
-        <div className="mx-4 mb-2 bg-primary/5 border border-primary/15 rounded-xl px-4 py-3 flex items-start gap-3 max-w-md self-center">
-          <svg className="w-5 h-5 text-primary shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-          </svg>
-          <p className="text-xs text-body leading-relaxed">
-            <span className="font-medium">Add to your home screen:</span> Tap the share button, then &quot;Add to Home Screen&quot; for quick access.
-          </p>
-          <button onClick={() => setShowInstallTip(false)} className="text-muted hover:text-secondary shrink-0">
+      {showIOSTip && (
+        <div className="mx-4 mb-2 bg-card border border-card-border rounded-xl px-4 py-3 flex items-start gap-3 max-w-md self-center shadow-sm">
+          <img src="/icon-192.png" alt="" className="w-10 h-10 rounded-lg shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-heading">Install Visit-My-Teachers</p>
+            <p className="text-xs text-secondary leading-relaxed mt-0.5">
+              Tap <svg className="w-3.5 h-3.5 inline-block align-text-bottom text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg> then &quot;Add to Home Screen&quot;
+            </p>
+          </div>
+          <button onClick={() => setShowIOSTip(false)} className="text-muted hover:text-secondary shrink-0">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
