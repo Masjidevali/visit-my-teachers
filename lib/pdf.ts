@@ -77,8 +77,8 @@ function addSchedulePage(doc: jsPDF, data: ScheduleData, isFirst: boolean) {
   doc.line(14, 36, 196, 36);
 
   // Build table columns
-  const head = ['Time', 'Student', 'Parent', 'Phone'];
-  if (hasPhoneCalls) head.push('Call Number');
+  const head = ['Time', 'Student', 'Parent'];
+  if (hasPhoneCalls) head.push('Phone Number');
   if (hasTranslators) head.push('Language');
   head.push('Notes');
 
@@ -88,7 +88,6 @@ function addSchedulePage(doc: jsPDF, data: ScheduleData, isFirst: boolean) {
       `${formatTime(slot.startTime)} - ${formatTime(slot.endTime)}`,
       slot.studentName || '(Available)',
       slot.parentName || '-',
-      slot.parentPhone || '-',
     ];
     if (hasPhoneCalls) row.push(slot.studentDbId ? (phoneCallRequests.get(slot.studentDbId) || '-') : '-');
     if (hasTranslators) row.push(slot.studentDbId ? (translatorRequests.get(slot.studentDbId) || '-') : '-');

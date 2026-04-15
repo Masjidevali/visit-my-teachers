@@ -158,8 +158,7 @@ function PDFContent({ eventId }: { eventId: string }) {
               <th className="border border-gray-300 px-2 py-1.5 text-left">Time</th>
               <th className="border border-gray-300 px-2 py-1.5 text-left">Student</th>
               <th className="border border-gray-300 px-2 py-1.5 text-left">Parent</th>
-              <th className="border border-gray-300 px-2 py-1.5 text-left">Phone</th>
-              {hasPhoneCalls && <th className="border border-gray-300 px-2 py-1.5 text-left">Call Number</th>}
+              {hasPhoneCalls && <th className="border border-gray-300 px-2 py-1.5 text-left">Phone Number</th>}
               {hasTranslators && <th className="border border-gray-300 px-2 py-1.5 text-left">Language</th>}
               <th className="border border-gray-300 px-2 py-1.5 text-left">Notes</th>
             </tr>
@@ -178,9 +177,6 @@ function PDFContent({ eventId }: { eventId: string }) {
                   </td>
                   <td className="border border-gray-300 px-2 py-1.5">
                     {slot.parentName || '-'}
-                  </td>
-                  <td className="border border-gray-300 px-2 py-1.5">
-                    {slot.parentPhone || '-'}
                   </td>
                   {hasPhoneCalls && (
                     <td className="border border-gray-300 px-2 py-1.5 font-medium">
