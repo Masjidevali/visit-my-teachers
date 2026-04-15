@@ -52,6 +52,8 @@ export default function BookPage({ params }: { params: Promise<{ studentId: stri
   const [needsSpecial, setNeedsSpecial] = useState(false);
   const [requestType, setRequestType] = useState('telephone_call');
   const [reason, setReason] = useState('');
+  const [contactNumber, setContactNumber] = useState('');
+  const [translatorLanguage, setTranslatorLanguage] = useState('');
 
   useEffect(() => {
     async function lookup() {
@@ -98,6 +100,7 @@ export default function BookPage({ params }: { params: Promise<{ studentId: stri
           parentPhone,
           parentEmail,
           notes,
+          ...(needsSpecial && reason.trim() ? { specialRequest: requestType } : {}),
         }),
       });
 
@@ -137,12 +140,18 @@ export default function BookPage({ params }: { params: Promise<{ studentId: stri
             requestType,
             reason,
             bookingId: data.booking.id,
+            contactNumber: requestType === 'telephone_call' ? contactNumber : requestType === 'translator' ? translatorLanguage : '',
           }),
         });
       }
 
       // Redirect to confirmation
-      router.push(`/book/confirm?ref=${data.booking.bookingRef}`);
+      const confirmParams = new URLSearchParams({ ref: data.booking.bookingRef });
+      if (needsSpecial && reason.trim()) {
+        const typeLabels: Record<string, string> = { telephone_call: 'Telephone Call', translator: 'Translator Needed', other: 'Other' };
+        confirmParams.set('specialRequest', typeLabels[requestType] || requestType);
+      }
+      router.push(`/book/confirm?${confirmParams.toString()}`);
     } catch {
       setError('Unable to connect. Please try again.');
     } finally {
@@ -364,10 +373,35 @@ export default function BookPage({ params }: { params: Promise<{ studentId: stri
                           >
                             <option value="telephone_call">Telephone Call</option>
                             <option value="translator">Translator Needed</option>
-                            <option value="accessibility">Accessibility Requirements</option>
                             <option value="other">Other</option>
                           </select>
                         </div>
+                        {requestType === 'telephone_call' && (
+                          <div>
+                            <label className="block text-sm font-medium text-body mb-1">Which number would you like to be contacted on? *</label>
+                            <input
+                              type="tel"
+                              value={contactNumber}
+                              onChange={(e) => setContactNumber(e.target.value)}
+                              required={needsSpecial && requestType === 'telephone_call'}
+                              placeholder="07xxx xxxxxx"
+                              className="w-full px-3 py-2 border border-input-border bg-input-bg text-heading rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
+                            />
+                          </div>
+                        )}
+                        {requestType === 'translator' && (
+                          <div>
+                            <label className="block text-sm font-medium text-body mb-1">Which language do you require translating to? *</label>
+                            <input
+                              type="text"
+                              value={translatorLanguage}
+                              onChange={(e) => setTranslatorLanguage(e.target.value)}
+                              required={needsSpecial && requestType === 'translator'}
+                              placeholder="e.g. Urdu, Arabic, Bengali"
+                              className="w-full px-3 py-2 border border-input-border bg-input-bg text-heading rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
+                            />
+                          </div>
+                        )}
                         <div>
                           <label className="block text-sm font-medium text-body mb-1">Reason / Details *</label>
                           <textarea

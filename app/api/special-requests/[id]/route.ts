@@ -4,6 +4,7 @@ import { specialRequests, students } from '@/db/schema';
 import { isAuthenticated } from '@/lib/auth';
 import { eq } from 'drizzle-orm';
 import { sendRequestStatusEmail } from '@/lib/email';
+import { formatRequestType } from '@/lib/utils';
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await isAuthenticated())) {
@@ -41,7 +42,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     parentName: req.parentName,
     parentEmail: req.parentEmail,
     studentName: student?.name || 'Unknown',
-    requestType: req.requestType,
+    requestType: formatRequestType(req.requestType),
     status,
     adminNotes: adminNotes || undefined,
   }).catch(err => console.error('Failed to send request status email:', err));

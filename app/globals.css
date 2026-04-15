@@ -25,24 +25,6 @@
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --surface: #141418;
-    --card-bg: #1e1e24;
-    --card-border: #2e2e36;
-    --text-heading: #f0f0ed;
-    --text-body: #d0d0cc;
-    --text-secondary: #a0a0a0;
-    --text-muted: #707078;
-    --bg-muted: #1a1a20;
-    --bg-hover: #26262e;
-    --input-border: #3a3a42;
-    --input-bg: #1a1a20;
-    --focus-ring: rgba(0, 123, 203, 0.35);
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
-    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.15);
-  }
-}
 
 @theme inline {
   --color-primary: var(--primary);
@@ -132,12 +114,26 @@ h1, h2, h3 {
   z-index: 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  .logo-watermark {
-    opacity: 0.06;
-    filter: brightness(1.5);
-  }
+
+/* Subtle Islamic geometric background pattern */
+.surface-pattern {
+  position: relative;
 }
+.surface-pattern::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  opacity: 0.025;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    /* Interlocking star grid — 8-pointed star approximation */
+    repeating-linear-gradient(0deg, transparent, transparent 29px, currentColor 29px, currentColor 30px),
+    repeating-linear-gradient(90deg, transparent, transparent 29px, currentColor 29px, currentColor 30px),
+    repeating-linear-gradient(45deg, transparent, transparent 41px, currentColor 41px, currentColor 42px),
+    repeating-linear-gradient(-45deg, transparent, transparent 41px, currentColor 41px, currentColor 42px);
+}
+
 
 /* Slot grid */
 .slot-available {

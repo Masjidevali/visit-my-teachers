@@ -101,6 +101,7 @@ export async function sendBookingConfirmation(details: {
   rawDate?: string;
   rawStartTime?: string;
   rawEndTime?: string;
+  specialRequest?: string;
 }) {
   const rows = [
     { label: 'Student', value: details.studentName },
@@ -126,9 +127,11 @@ export async function sendBookingConfirmation(details: {
     : '';
 
   let qrHtml = '';
+  let qrAttachment: { filename: string; content: Buffer; cid: string } | null = null;
   try {
-    const qrDataUrl = await QRCode.toDataURL(details.bookingRef, { width: 140, margin: 1 });
-    qrHtml = `<div style="text-align:center;margin:0 0 24px;"><img src="${qrDataUrl}" alt="QR Code" width="140" height="140" style="border-radius:8px;" /><p style="margin:8px 0 0;font-size:11px;color:#9ca3af;">Show this QR code on arrival for quick check-in</p></div>`;
+    const qrBuffer = await QRCode.toBuffer(details.bookingRef, { width: 140, margin: 1, type: 'png' });
+    qrAttachment = { filename: 'qr-checkin.png', content: qrBuffer, cid: 'qrcheckin' };
+    qrHtml = `<div style="text-align:center;margin:0 0 24px;"><img src="cid:qrcheckin" alt="QR Code" width="140" height="140" style="border-radius:8px;" /><p style="margin:8px 0 0;font-size:11px;color:#9ca3af;">Show this QR code on arrival for quick check-in</p></div>`;
   } catch { /* QR generation failed, skip */ }
 
   const body = `
@@ -137,6 +140,11 @@ export async function sendBookingConfirmation(details: {
     ${detailsTable(rows)}
     ${qrHtml}
     ${calendarBtn}
+    ${details.specialRequest ? `
+    <div style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:10px;padding:16px;margin:0 0 24px;">
+      <p style="margin:0 0 4px;color:#92400E;font-size:14px;font-weight:600;">Special Request Submitted</p>
+      <p style="margin:0;color:#A16207;font-size:13px;">Your request for <strong>${details.specialRequest}</strong> has been submitted and is subject to approval. You will receive a separate email once it has been reviewed.</p>
+    </div>` : ''}
     <p style="margin:0 0 8px;color:#374151;font-size:14px;">Please keep your booking reference safe. You can use it to view or cancel your appointment.</p>
     ${CLOSING}
   `;
@@ -146,6 +154,7 @@ export async function sendBookingConfirmation(details: {
     to: details.parentEmail,
     subject: `Booking Confirmed - ${details.studentName} - ${details.date} at ${details.time}`,
     html: emailTemplate('Booking Confirmation', body),
+    ...(qrAttachment ? { attachments: [qrAttachment] } : {}),
   });
 }
 

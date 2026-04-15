@@ -24,7 +24,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${playfair.variable} ${dmSans.variable} h-full`}>
-      <body className="min-h-full flex flex-col bg-surface text-body antialiased">
+      <body className="min-h-full flex flex-col bg-surface text-body antialiased surface-pattern">
         <div className="brand-stripe" />
         <div className="logo-watermark" aria-hidden="true" />
         <div className="relative z-10 flex flex-col min-h-full">

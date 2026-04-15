@@ -29,6 +29,7 @@ interface EventClass {
   year: string;
   name: string;
   teacherName: string;
+  slotCount: number;
 }
 
 interface Booking {
@@ -76,6 +77,7 @@ interface SpecialRequest {
   parentPhone: string;
   requestType: string;
   reason: string;
+  contactNumber: string;
   status: string;
   adminNotes: string;
   studentName: string;
@@ -371,9 +373,25 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     loadEventClasses();
   }
 
+  async function ungenerateSlots(ecId: number) {
+    if (!confirm('Are you sure you want to remove all slots for this class? This cannot be undone.')) return;
+    const res = await fetch(`/api/time-slots?eventClassId=${ecId}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const data = await res.json();
+      alert(data.error || 'Failed to remove slots');
+      return;
+    }
+    loadEventClasses();
+  }
+
   async function generateAllSlots() {
+    const classesWithoutSlots = eventClasses.filter(ec => ec.slotCount === 0);
+    if (classesWithoutSlots.length === 0) {
+      alert('All classes already have slots generated.');
+      return;
+    }
     let total = 0;
-    for (const ec of eventClasses) {
+    for (const ec of classesWithoutSlots) {
       const res = await fetch('/api/time-slots/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -490,11 +508,20 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Event Classes</h2>
             <div className="flex gap-2">
-              {eventClasses.length > 0 && (
-                <button onClick={generateAllSlots} className="px-3 py-1.5 text-xs bg-accent text-white rounded-lg hover:bg-accent-light">
-                  Generate All Slots
-                </button>
-              )}
+              {eventClasses.length > 0 && (() => {
+                const needSlots = eventClasses.filter(ec => ec.slotCount === 0).length;
+                const allGenerated = needSlots === 0;
+                return allGenerated ? (
+                  <span className="flex items-center gap-1.5 text-xs text-green-600 font-medium">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                    All Slots Generated
+                  </span>
+                ) : (
+                  <button onClick={generateAllSlots} className="px-3 py-1.5 text-xs bg-accent text-white rounded-lg hover:bg-accent-light">
+                    Generate Slots ({needSlots} class{needSlots !== 1 ? 'es' : ''})
+                  </button>
+                );
+              })()}
               {availableClasses.length > 0 && (
                 <button onClick={() => setShowClassPicker(!showClassPicker)} className="px-3 py-1.5 text-xs bg-primary text-white rounded-lg hover:bg-primary-light">
                   {showClassPicker ? 'Cancel' : 'Add Classes'}
@@ -623,10 +650,20 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                         {!ec.showTeacher && ' | Teacher hidden'}
                       </p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2">
                       <button onClick={() => { setEditingEcId(ec.id); setEditEcForm({ date: ec.date, startTime: ec.startTime, slotDuration: ec.slotDuration, showTeacher: ec.showTeacher, room: ec.room }); }}
                         className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50">Edit</button>
-                      <button onClick={() => generateSlots(ec.id)} className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50">Generate Slots</button>
+                      {ec.slotCount > 0 ? (
+                        <>
+                          <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                            {ec.slotCount} slots
+                          </span>
+                          <button onClick={() => ungenerateSlots(ec.id)} className="px-3 py-1 text-xs text-amber-600 border border-amber-200 rounded hover:bg-amber-50">Remove Slots</button>
+                        </>
+                      ) : (
+                        <button onClick={() => generateSlots(ec.id)} className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50">Generate Slots</button>
+                      )}
                       <button onClick={() => removeEventClass(ec.id)} className="px-3 py-1 text-xs text-red-600 border border-red-200 rounded hover:bg-red-50">Remove</button>
                     </div>
                   </div>
@@ -884,29 +921,79 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
 
       {/* Export Tab */}
       {activeTab === 'export' && (
-        <div>
-          <h2 className="text-lg font-semibold mb-4">Export Teacher Schedules (PDF)</h2>
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <p className="text-sm text-gray-500 mb-4">Select a class to download the teacher&apos;s schedule as a PDF.</p>
-            <div className="space-y-2">
-              {eventClasses.map(ec => (
-                <div key={ec.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
-                  <div>
-                    <p className="font-medium">{ec.year} - {ec.name}</p>
-                    <p className="text-sm text-gray-500">{ec.teacherName}</p>
-                  </div>
-                  <button
-                    onClick={() => window.open(`/admin/events/${id}/pdf?eventClassId=${ec.id}`, '_blank')}
-                    className="px-4 py-1.5 text-sm bg-primary text-white rounded-lg hover:bg-primary-light"
-                  >
-                    Download PDF
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        <ExportTab eventClasses={eventClasses} eventId={id} />
       )}
+    </div>
+  );
+}
+
+function ExportTab({ eventClasses, eventId }: { eventClasses: EventClass[]; eventId: string }) {
+  const [exportingId, setExportingId] = useState<number | null>(null);
+  const [exportingAll, setExportingAll] = useState(false);
+
+  async function handleExportSingle(ecId: number, year: string, name: string) {
+    setExportingId(ecId);
+    try {
+      const { generateSchedulePDF, downloadBlob } = await import('@/lib/pdf');
+      const res = await fetch(`/api/export/teacher-schedule?eventClassId=${ecId}`);
+      const data = await res.json();
+      const blob = generateSchedulePDF(data);
+      downloadBlob(blob, `${year}-${name}-schedule.pdf`);
+    } finally {
+      setExportingId(null);
+    }
+  }
+
+  async function handleExportAll() {
+    setExportingAll(true);
+    try {
+      const { generateAllSchedulesPDF, downloadBlob } = await import('@/lib/pdf');
+      const schedules = await Promise.all(
+        eventClasses.map(ec =>
+          fetch(`/api/export/teacher-schedule?eventClassId=${ec.id}`).then(r => r.json())
+        )
+      );
+      const blob = generateAllSchedulesPDF(schedules);
+      downloadBlob(blob, 'all-schedules.pdf');
+    } finally {
+      setExportingAll(false);
+    }
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold">Export Teacher Schedules (PDF)</h2>
+        {eventClasses.length > 0 && (
+          <button
+            onClick={handleExportAll}
+            disabled={exportingAll}
+            className="px-4 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent-light disabled:opacity-50 transition-colors"
+          >
+            {exportingAll ? 'Generating...' : 'Export All Classes'}
+          </button>
+        )}
+      </div>
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <p className="text-sm text-gray-500 mb-4">Download individual class schedules or export all at once.</p>
+        <div className="space-y-2">
+          {eventClasses.map(ec => (
+            <div key={ec.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
+              <div>
+                <p className="font-medium">{ec.year} - {ec.name}</p>
+                <p className="text-sm text-gray-500">{ec.teacherName}</p>
+              </div>
+              <button
+                onClick={() => handleExportSingle(ec.id, ec.year, ec.name)}
+                disabled={exportingId === ec.id}
+                className="px-4 py-1.5 text-sm bg-primary text-white rounded-lg hover:bg-primary-light disabled:opacity-50 transition-colors"
+              >
+                {exportingId === ec.id ? 'Generating...' : 'Download PDF'}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -917,7 +1004,6 @@ function RequestCard({ request, onAction }: { request: SpecialRequest; onAction:
   const typeLabels: Record<string, string> = {
     telephone_call: 'Telephone Call',
     translator: 'Translator Needed',
-    accessibility: 'Accessibility Requirements',
     other: 'Other',
   };
 
@@ -941,6 +1027,12 @@ function RequestCard({ request, onAction }: { request: SpecialRequest; onAction:
       <div className="mt-3 text-sm">
         <p><span className="font-medium">Type:</span> {typeLabels[request.requestType] || request.requestType}</p>
         <p><span className="font-medium">Reason:</span> {request.reason}</p>
+        {request.contactNumber && request.requestType === 'telephone_call' && (
+          <p><span className="font-medium">Contact Number:</span> {request.contactNumber}</p>
+        )}
+        {request.contactNumber && request.requestType === 'translator' && (
+          <p><span className="font-medium">Language:</span> {request.contactNumber}</p>
+        )}
         <p><span className="font-medium">Phone:</span> {request.parentPhone}</p>
         <p><span className="font-medium">Email:</span> {request.parentEmail}</p>
       </div>

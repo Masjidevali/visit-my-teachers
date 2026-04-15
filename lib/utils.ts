@@ -41,3 +41,13 @@ export function formatTime(time: string): string {
   const hour12 = h % 12 || 12;
   return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
 }
+
+const REQUEST_TYPE_LABELS: Record<string, string> = {
+  telephone_call: 'Telephone Call',
+  translator: 'Translator Needed',
+  other: 'Other',
+};
+
+export function formatRequestType(type: string): string {
+  return REQUEST_TYPE_LABELS[type] || type;
+}

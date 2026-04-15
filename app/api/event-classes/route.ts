@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { eventClasses, classes } from '@/db/schema';
+import { eventClasses, classes, timeSlots } from '@/db/schema';
 import { isAuthenticated } from '@/lib/auth';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'eventId required' }, { status: 400 });
   }
 
-  const result = await db.select({
+  const rows = await db.select({
     id: eventClasses.id,
     eventId: eventClasses.eventId,
     classId: eventClasses.classId,
@@ -29,6 +29,17 @@ export async function GET(request: Request) {
     .from(eventClasses)
     .innerJoin(classes, eq(eventClasses.classId, classes.id))
     .where(eq(eventClasses.eventId, parseInt(eventId)));
+
+  // Get slot counts per event class
+  const slotCounts = await db.select({
+    eventClassId: timeSlots.eventClassId,
+    count: sql<number>`count(*)`.as('count'),
+  })
+    .from(timeSlots)
+    .groupBy(timeSlots.eventClassId);
+
+  const countMap = new Map(slotCounts.map(s => [s.eventClassId, s.count]));
+  const result = rows.map(r => ({ ...r, slotCount: countMap.get(r.id) || 0 }));
 
   return NextResponse.json(result);
 }

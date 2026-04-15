@@ -25,6 +25,7 @@ interface BookingDetails {
 function ConfirmContent() {
   const searchParams = useSearchParams();
   const ref = searchParams.get('ref');
+  const specialRequest = searchParams.get('specialRequest');
   const [booking, setBooking] = useState<BookingDetails | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -117,6 +118,15 @@ function ConfirmContent() {
             )}
           </div>
         </div>
+
+        {specialRequest && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-left">
+            <p className="text-sm font-semibold text-amber-800 mb-1">Special Request Submitted</p>
+            <p className="text-sm text-amber-700">
+              Your request for <strong>{specialRequest}</strong> has been submitted and is subject to approval. You will receive a separate email once it has been reviewed.
+            </p>
+          </div>
+        )}
 
         <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mb-6">
           <p className="text-xs text-muted mb-1">Your Booking Reference</p>

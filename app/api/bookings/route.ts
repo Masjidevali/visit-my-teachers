@@ -8,7 +8,7 @@ import { formatDate, formatTime } from '@/lib/utils';
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const { slotId, studentId, parentName, parentPhone, parentEmail, notes } = body;
+  const { slotId, studentId, parentName, parentPhone, parentEmail, notes, specialRequest } = body;
 
   if (!slotId || !studentId || !parentName || !parentPhone || !parentEmail) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -87,6 +87,7 @@ export async function POST(request: Request) {
       rawDate: student.eventDate,
       rawStartTime: slot.startTime,
       rawEndTime: slot.endTime,
+      specialRequest: specialRequest ? ({ telephone_call: 'Telephone Call', translator: 'Translator Needed', other: 'Other' } as Record<string, string>)[specialRequest] || specialRequest : undefined,
     }).catch(err => console.error('Failed to send confirmation email:', err));
 
     return NextResponse.json({

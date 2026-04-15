@@ -110,7 +110,7 @@ export default function KioskPage({ params }: { params: Promise<{ eventId: strin
 
     try {
       await scanner.start(
-        { facingMode: 'environment' },
+        { facingMode: 'user' },
         { fps: 10, qrbox: { width: 250, height: 250 } },
         (decodedText: string) => {
           scanner.stop().catch(() => {});

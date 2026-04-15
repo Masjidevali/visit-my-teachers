@@ -90,6 +90,7 @@ export const specialRequests = sqliteTable('special_requests', {
   parentPhone: text('parent_phone').notNull(),
   requestType: text('request_type').notNull(),
   reason: text('reason').notNull(),
+  contactNumber: text('contact_number').default(''),
   status: text('status').notNull().default('pending'),
   adminNotes: text('admin_notes').default(''),
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),

@@ -45,6 +45,7 @@ export async function GET(request: Request) {
     notes: bookings.notes,
     studentName: students.name,
     studentIdStr: students.studentId,
+    studentDbId: students.id,
   })
     .from(timeSlots)
     .leftJoin(bookings, eq(timeSlots.id, bookings.timeSlotId))
@@ -62,6 +63,7 @@ export async function GET(request: Request) {
     studentId: specialRequests.studentId,
     requestType: specialRequests.requestType,
     reason: specialRequests.reason,
+    contactNumber: specialRequests.contactNumber,
     status: specialRequests.status,
   })
     .from(specialRequests)

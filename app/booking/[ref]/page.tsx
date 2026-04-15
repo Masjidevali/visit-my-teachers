@@ -4,6 +4,7 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { formatTime, formatDate } from '@/lib/utils';
+import QRCode from 'qrcode';
 
 interface BookingDetails {
   bookingRef: string;
@@ -47,6 +48,12 @@ export default function BookingPage({ params }: { params: Promise<{ ref: string 
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
   const [rescheduleSuccess, setRescheduleSuccess] = useState('');
+  const [qrDataUrl, setQrDataUrl] = useState('');
+
+  useEffect(() => {
+    if (!booking) return;
+    QRCode.toDataURL(booking.bookingRef, { width: 160, margin: 1 }).then(setQrDataUrl);
+  }, [booking]);
 
   useEffect(() => {
     async function load() {
@@ -188,6 +195,12 @@ export default function BookingPage({ params }: { params: Promise<{ ref: string 
                 <span className="text-secondary">Booking Ref</span>
                 <span className="font-mono font-bold text-primary">{booking.bookingRef}</span>
               </div>
+              {qrDataUrl && (
+                <div className="py-3 border-b border-card-border text-center">
+                  <img src={qrDataUrl} alt="QR code for check-in" className="mx-auto w-28 h-28 rounded" />
+                  <p className="text-xs text-muted mt-1">Show on arrival for check-in</p>
+                </div>
+              )}
               <div className="flex justify-between py-2 border-b border-card-border">
                 <span className="text-secondary">Student</span>
                 <span className="font-medium text-heading">{booking.studentName}</span>

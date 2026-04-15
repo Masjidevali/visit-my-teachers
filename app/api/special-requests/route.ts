@@ -23,6 +23,7 @@ export async function GET(request: Request) {
     parentPhone: specialRequests.parentPhone,
     requestType: specialRequests.requestType,
     reason: specialRequests.reason,
+    contactNumber: specialRequests.contactNumber,
     status: specialRequests.status,
     adminNotes: specialRequests.adminNotes,
     createdAt: specialRequests.createdAt,
@@ -43,7 +44,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const { studentId, parentName, parentEmail, parentPhone, requestType, reason, bookingId } = body;
+  const { studentId, parentName, parentEmail, parentPhone, requestType, reason, bookingId, contactNumber } = body;
 
   if (!studentId || !parentName || !parentEmail || !parentPhone || !requestType || !reason) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -57,6 +58,7 @@ export async function POST(request: Request) {
     requestType,
     reason,
     bookingId: bookingId || null,
+    contactNumber: contactNumber || '',
   }).returning();
 
   return NextResponse.json(result[0], { status: 201 });
