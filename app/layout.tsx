@@ -31,6 +31,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${playfair.variable} ${dmSans.variable} h-full`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js'); }` }} />
+      </head>
       <body className="min-h-full flex flex-col bg-surface text-body antialiased surface-pattern">
         <div className="brand-stripe" />
         <div className="logo-watermark" aria-hidden="true" />
