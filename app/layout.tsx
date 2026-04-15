@@ -15,6 +15,13 @@ const dmSans = DM_Sans({
 export const metadata: Metadata = {
   title: "Visit-My-Teachers - Madrasah Vali",
   description: "Book your Visit-My-Teachers appointment at Madrasah Vali",
+  manifest: "/manifest.json",
+  themeColor: "#007BCB",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Visit-My-Teachers",
+  },
 };
 
 export default function RootLayout({

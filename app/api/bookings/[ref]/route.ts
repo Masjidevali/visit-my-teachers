@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { bookings, timeSlots, students, classes, events, eventClasses } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { sendCancellationConfirmation } from '@/lib/email';
+import { formatDate, formatTime } from '@/lib/utils';
 
 export async function GET(_request: Request, { params }: { params: Promise<{ ref: string }> }) {
   const { ref } = await params;
@@ -53,8 +55,21 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   const booking = await db.select({
     id: bookings.id,
     timeSlotId: bookings.timeSlotId,
+    bookingRef: bookings.bookingRef,
+    parentName: bookings.parentName,
+    parentEmail: bookings.parentEmail,
+    startTime: timeSlots.startTime,
+    endTime: timeSlots.endTime,
+    studentName: students.name,
+    className: classes.name,
+    year: classes.year,
+    eventDate: eventClasses.date,
   })
     .from(bookings)
+    .innerJoin(timeSlots, eq(bookings.timeSlotId, timeSlots.id))
+    .innerJoin(eventClasses, eq(timeSlots.eventClassId, eventClasses.id))
+    .innerJoin(classes, eq(eventClasses.classId, classes.id))
+    .innerJoin(students, eq(bookings.studentId, students.id))
     .where(eq(bookings.bookingRef, ref.toUpperCase()))
     .get();
 
@@ -67,6 +82,17 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
   // Delete the booking
   await db.delete(bookings).where(eq(bookings.id, booking.id));
+
+  // Send cancellation email
+  sendCancellationConfirmation({
+    parentName: booking.parentName,
+    parentEmail: booking.parentEmail,
+    studentName: booking.studentName,
+    className: `${booking.year} - ${booking.className}`,
+    date: formatDate(booking.eventDate),
+    time: `${formatTime(booking.startTime)} - ${formatTime(booking.endTime)}`,
+    bookingRef: booking.bookingRef,
+  }).catch(err => console.error('Failed to send cancellation email:', err));
 
   return NextResponse.json({ success: true });
 }

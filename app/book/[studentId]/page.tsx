@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { formatTime } from '@/lib/utils';
+import { formatTime, isValidUKPhone } from '@/lib/utils';
 import { ProgressStepper } from '@/app/components/ProgressStepper';
 
 interface StudentInfo {
@@ -85,6 +85,16 @@ export default function BookPage({ params }: { params: Promise<{ studentId: stri
   async function handleBook(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedSlot || !student) return;
+
+    if (!isValidUKPhone(parentPhone)) {
+      setError('Please enter a valid UK mobile number (e.g. 07xxx xxxxxx).');
+      return;
+    }
+
+    if (needsSpecial && requestType === 'telephone_call' && contactNumber && !isValidUKPhone(contactNumber)) {
+      setError('Please enter a valid UK mobile number for the contact number.');
+      return;
+    }
 
     setSubmitting(true);
     setError('');

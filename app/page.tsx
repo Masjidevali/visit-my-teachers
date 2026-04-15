@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ProgressStepper } from './components/ProgressStepper';
 import { EventBanner } from './components/EventBanner';
@@ -10,13 +10,22 @@ function HomeContent() {
   const prefillName = searchParams.get('parentName') || '';
   const prefillPhone = searchParams.get('parentPhone') || '';
   const prefillEmail = searchParams.get('parentEmail') || '';
+  const wasCancelled = searchParams.get('cancelled') === 'true';
 
   const [studentId, setStudentId] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [bookingRef, setBookingRef] = useState('');
   const [showLookup, setShowLookup] = useState(false);
+  const [confirmStudent, setConfirmStudent] = useState<{ name: string; className: string; year: string } | null>(null);
+  const [showInstallTip, setShowInstallTip] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || ('standalone' in navigator && (navigator as unknown as { standalone: boolean }).standalone);
+    setShowInstallTip(isIOS && !isStandalone);
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -47,17 +56,26 @@ function HomeContent() {
         return;
       }
 
-      const params = new URLSearchParams();
-      if (prefillName) params.set('parentName', prefillName);
-      if (prefillPhone) params.set('parentPhone', prefillPhone);
-      if (prefillEmail) params.set('parentEmail', prefillEmail);
-      const qs = params.toString();
-      router.push(`/book/${encodeURIComponent(studentId.trim().toUpperCase())}${qs ? `?${qs}` : ''}`);
+      const data = await res.json();
+      setConfirmStudent({
+        name: data.student.name,
+        className: data.student.className,
+        year: data.student.year,
+      });
     } catch {
       setError('Unable to connect. Please check your internet connection.');
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleConfirmStudent() {
+    const params = new URLSearchParams();
+    if (prefillName) params.set('parentName', prefillName);
+    if (prefillPhone) params.set('parentPhone', prefillPhone);
+    if (prefillEmail) params.set('parentEmail', prefillEmail);
+    const qs = params.toString();
+    router.push(`/book/${encodeURIComponent(studentId.trim().toUpperCase())}${qs ? `?${qs}` : ''}`);
   }
 
   function handleLookup(e: React.FormEvent) {
@@ -83,6 +101,12 @@ function HomeContent() {
       {/* Main */}
       <main className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
+          {wasCancelled && (
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4 text-center animate-fade-up">
+              <p className="text-sm text-green-700 font-medium">Your booking has been cancelled. The time slot has been released.</p>
+              <p className="text-xs text-green-600 mt-1">A confirmation email has been sent.</p>
+            </div>
+          )}
           {/* Book Appointment Card */}
           <div className="bg-card rounded-2xl shadow-sm border border-card-border p-8 animate-fade-up delay-1">
             <h2 className="text-xl font-semibold text-heading mb-2">Book an Appointment</h2>
@@ -149,9 +173,67 @@ function HomeContent() {
         </div>
       </main>
 
+      {/* Confirm Student Modal */}
+      {confirmStudent && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setConfirmStudent(null)}>
+          <div className="bg-card rounded-2xl shadow-lg border border-card-border p-6 w-full max-w-sm animate-fade-up" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-heading text-center mb-1">Is this your child?</h3>
+            <p className="text-secondary text-sm text-center mb-5">Please confirm the details below are correct.</p>
+
+            <div className="bg-muted-bg rounded-xl p-4 space-y-2 mb-6">
+              <div className="flex justify-between text-sm">
+                <span className="text-secondary">Name:</span>
+                <span className="font-semibold text-heading">{confirmStudent.name}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-secondary">Year:</span>
+                <span className="font-semibold text-heading">{confirmStudent.year}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-secondary">Class:</span>
+                <span className="font-semibold text-heading">{confirmStudent.className}</span>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setConfirmStudent(null); setStudentId(''); }}
+                className="flex-1 py-3 bg-muted-bg text-body rounded-xl font-medium hover:bg-hover-bg transition-colors"
+              >
+                No, go back
+              </button>
+              <button
+                onClick={handleConfirmStudent}
+                className="flex-1 py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary-light transition-colors"
+              >
+                Yes, continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* iOS Install Tip */}
+      {showInstallTip && (
+        <div className="mx-4 mb-2 bg-primary/5 border border-primary/15 rounded-xl px-4 py-3 flex items-start gap-3 max-w-md self-center">
+          <svg className="w-5 h-5 text-primary shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+          <p className="text-xs text-body leading-relaxed">
+            <span className="font-medium">Add to your home screen:</span> Tap the share button, then &quot;Add to Home Screen&quot; for quick access.
+          </p>
+          <button onClick={() => setShowInstallTip(false)} className="text-muted hover:text-secondary shrink-0">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {/* Footer */}
-      <footer className="py-6 text-center text-xs text-muted tracking-wide">
-        Madrasah Vali
+      <footer className="py-8 px-4 text-center text-xs text-muted tracking-wide space-y-1">
+        <p className="font-medium text-secondary">Madrasah Vali at Issa Hikmah Centre</p>
+        <p>For support, please email us at <a href="mailto:info@madrasahvali.com" className="text-primary hover:underline">info@madrasahvali.com</a></p>
       </footer>
     </div>
   );

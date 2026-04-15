@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, use } from 'react';
 import { formatTime } from '@/lib/utils';
 
-type Screen = 'idle' | 'loading' | 'success' | 'already' | 'error';
+type Screen = 'pin' | 'idle' | 'loading' | 'success' | 'already' | 'error';
 
 interface CheckinResult {
   studentName: string;
@@ -15,7 +15,9 @@ interface CheckinResult {
 
 export default function KioskPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = use(params);
-  const [screen, setScreen] = useState<Screen>('idle');
+  const [screen, setScreen] = useState<Screen>('pin');
+  const [pin, setPin] = useState('');
+  const [pinError, setPinError] = useState('');
   const [studentId, setStudentId] = useState('');
   const [result, setResult] = useState<CheckinResult | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
@@ -24,8 +26,30 @@ export default function KioskPage({ params }: { params: Promise<{ eventId: strin
   const inputRef = useRef<HTMLInputElement>(null);
   const resetTimer = useRef<ReturnType<typeof setTimeout>>();
 
+  const pinRef = useRef<HTMLInputElement>(null);
+
+  async function handlePinSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setPinError('');
+    const res = await fetch('/api/checkin/kiosk/verify-pin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin }),
+    });
+    if (res.ok) {
+      setScreen('idle');
+    } else {
+      setPinError('Incorrect PIN. Please try again.');
+      setPin('');
+      pinRef.current?.focus();
+    }
+  }
+
   // Auto-focus input on idle
   useEffect(() => {
+    if (screen === 'pin' && pinRef.current) {
+      pinRef.current.focus();
+    }
     if (screen === 'idle' && inputRef.current) {
       inputRef.current.focus();
     }
@@ -157,6 +181,39 @@ export default function KioskPage({ params }: { params: Promise<{ eventId: strin
 
       {/* Main */}
       <main className="flex-1 flex items-center justify-center p-6">
+
+        {/* PIN — Lock screen */}
+        {screen === 'pin' && (
+          <div className="w-full max-w-xs text-center animate-fade-up">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-heading mb-2 font-display">Kiosk Locked</h2>
+            <p className="text-secondary text-sm mb-6">Enter the PIN to activate check-in.</p>
+            <form onSubmit={handlePinSubmit}>
+              <input
+                ref={pinRef}
+                type="password"
+                inputMode="numeric"
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                placeholder="Enter PIN"
+                className="w-full px-6 py-4 border-2 border-card-border bg-card rounded-2xl text-center text-2xl font-bold text-heading tracking-widest focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-colors"
+                autoComplete="off"
+              />
+              {pinError && <p className="mt-2 text-sm text-danger">{pinError}</p>}
+              <button
+                type="submit"
+                disabled={!pin.trim()}
+                className="mt-4 w-full bg-primary text-white py-4 rounded-2xl text-lg font-semibold hover:bg-primary-light transition-colors disabled:opacity-40"
+              >
+                Unlock
+              </button>
+            </form>
+          </div>
+        )}
 
         {/* IDLE — Input screen */}
         {screen === 'idle' && (

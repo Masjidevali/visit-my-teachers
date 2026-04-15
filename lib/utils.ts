@@ -42,6 +42,11 @@ export function formatTime(time: string): string {
   return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
 }
 
+export function isValidUKPhone(phone: string): boolean {
+  const cleaned = phone.replace(/[\s\-()]/g, '');
+  return /^(07\d{9}|(\+44)7\d{9})$/.test(cleaned);
+}
+
 const REQUEST_TYPE_LABELS: Record<string, string> = {
   telephone_call: 'Telephone Call',
   translator: 'Translator Needed',

@@ -158,6 +158,39 @@ export async function sendBookingConfirmation(details: {
   });
 }
 
+export async function sendCancellationConfirmation(details: {
+  parentName: string;
+  parentEmail: string;
+  studentName: string;
+  className: string;
+  date: string;
+  time: string;
+  bookingRef: string;
+}) {
+  const rows = [
+    { label: 'Student', value: details.studentName },
+    { label: 'Class', value: details.className },
+    { label: 'Date', value: details.date },
+    { label: 'Time', value: details.time },
+    { label: 'Booking Ref', value: details.bookingRef, style: 'font-family:monospace;color:#9ca3af;text-decoration:line-through;' },
+  ];
+
+  const body = `
+    ${GREETING(details.parentName)}
+    <p style="margin:0 0 24px;color:#374151;font-size:15px;">Your Visit-My-Teachers appointment has been <strong>cancelled</strong>. The time slot has been released for others to book.</p>
+    ${detailsTable(rows)}
+    <p style="margin:0 0 8px;color:#374151;font-size:14px;">If this was a mistake, you can book a new appointment using your child&apos;s Student ID.</p>
+    ${CLOSING}
+  `;
+
+  await transporter.sendMail({
+    from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
+    to: details.parentEmail,
+    subject: `Booking Cancelled - ${details.studentName}`,
+    html: emailTemplate('Booking Cancelled', body),
+  });
+}
+
 export async function sendBookingReminder(details: {
   parentName: string;
   parentEmail: string;
