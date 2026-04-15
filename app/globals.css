@@ -1,26 +1,149 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  --primary: #007BCB;
+  --primary-light: #1a8fd6;
+  --primary-dark: #005d99;
+  --accent: #7BC800;
+  --accent-light: #8dd61a;
+  --danger: #C91212;
+  --surface: #FAFAF7;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Semantic colours */
+  --card-bg: #ffffff;
+  --card-border: #e5e7eb;
+  --text-heading: #111827;
+  --text-body: #374151;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+  --bg-muted: #f9fafb;
+  --bg-hover: #f3f4f6;
+  --input-border: #d1d5db;
+  --input-bg: #ffffff;
+  --focus-ring: rgba(0, 123, 203, 0.2);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --surface: #141418;
+    --card-bg: #1e1e24;
+    --card-border: #2e2e36;
+    --text-heading: #f0f0ed;
+    --text-body: #d0d0cc;
+    --text-secondary: #a0a0a0;
+    --text-muted: #707078;
+    --bg-muted: #1a1a20;
+    --bg-hover: #26262e;
+    --input-border: #3a3a42;
+    --input-bg: #1a1a20;
+    --focus-ring: rgba(0, 123, 203, 0.35);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.15);
   }
 }
 
+@theme inline {
+  --color-primary: var(--primary);
+  --color-primary-light: var(--primary-light);
+  --color-primary-dark: var(--primary-dark);
+  --color-accent: var(--accent);
+  --color-accent-light: var(--accent-light);
+  --color-danger: var(--danger);
+  --color-surface: var(--surface);
+  --color-card: var(--card-bg);
+  --color-card-border: var(--card-border);
+  --color-heading: var(--text-heading);
+  --color-body: var(--text-body);
+  --color-secondary: var(--text-secondary);
+  --color-muted: var(--text-muted);
+  --color-muted-bg: var(--bg-muted);
+  --color-hover-bg: var(--bg-hover);
+  --color-input-border: var(--input-border);
+  --color-input-bg: var(--input-bg);
+  --font-sans: var(--font-dm-sans);
+  --font-display: var(--font-playfair);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans, 'DM Sans', sans-serif);
+  color: var(--text-body);
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display, 'Playfair Display', Georgia, serif);
+}
+
+/* Brand stripe — three madrasah colours */
+.brand-stripe {
+  height: 4px;
+  background: linear-gradient(to right, #7BC800 33.33%, #007BCB 33.33%, #007BCB 66.66%, #C91212 66.66%);
+  flex-shrink: 0;
+}
+
+/* Header with subtle Islamic-inspired geometric pattern */
+.header-pattern {
+  position: relative;
+  overflow: hidden;
+}
+.header-pattern::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.06;
+  background-image:
+    repeating-linear-gradient(45deg, transparent, transparent 20px, white 20px, white 21px),
+    repeating-linear-gradient(-45deg, transparent, transparent 20px, white 20px, white 21px);
+  pointer-events: none;
+}
+
+/* Entrance animations */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.6s ease-out both;
+}
+
+.delay-1 { animation-delay: 100ms; }
+.delay-2 { animation-delay: 200ms; }
+.delay-3 { animation-delay: 300ms; }
+
+@keyframes scale-in {
+  from { transform: scale(0); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.animate-scale-in { animation: scale-in 0.4s ease-out 0.2s both; }
+
+/* Logo watermark — large, centered, semi-transparent background */
+.logo-watermark {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(70vw, 480px);
+  height: min(70vw, 480px);
+  background: url('/logo.png') center / contain no-repeat;
+  opacity: 0.04;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .logo-watermark {
+    opacity: 0.06;
+    filter: brightness(1.5);
+  }
+}
+
+/* Slot grid */
+.slot-available {
+  transition: all 0.2s ease;
+}
+.slot-available:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 123, 203, 0.15);
 }
