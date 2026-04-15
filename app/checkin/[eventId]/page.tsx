@@ -24,7 +24,7 @@ export default function KioskPage({ params }: { params: Promise<{ eventId: strin
   const [scanning, setScanning] = useState(false);
   const html5QrRef = useRef<unknown>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const resetTimer = useRef<ReturnType<typeof setTimeout>>();
+  const resetTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const pinRef = useRef<HTMLInputElement>(null);
 

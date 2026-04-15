@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'eventId required' }, { status: 400 });
   }
 
-  const parsedEventId = parseInt(eventId);
+  const parsedEventId = Number(eventId);
 
   // Get the event name
   const event = await db.select({ name: events.name })
