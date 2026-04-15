@@ -4,6 +4,7 @@ import { bookings, timeSlots, students, classes, events, eventClasses } from '@/
 import { eq, and, notInArray, sql } from 'drizzle-orm';
 import { isAuthenticated } from '@/lib/auth';
 import { generateBookingRef, formatDate, formatTime } from '@/lib/utils';
+import { logActivity } from '@/lib/activity';
 import { sendAutoAssignNotification } from '@/lib/email';
 
 export async function POST(request: Request) {
@@ -114,6 +115,8 @@ export async function POST(request: Request) {
       }
     }
   }
+
+  logActivity('Auto-assign', `${assigned} students assigned, ${noSlots} had no slots, ${emailsSent} emails sent`);
 
   return NextResponse.json({ assigned, noSlots, noSlotsStudents, emailsSent, emailsFailed });
 }

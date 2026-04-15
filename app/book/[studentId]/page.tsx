@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, useRef, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { formatTime, isValidUKPhone } from '@/lib/utils';
 import { ProgressStepper } from '@/app/components/ProgressStepper';
@@ -38,8 +38,11 @@ export default function BookPage({ params }: { params: Promise<{ studentId: stri
   const [slots, setSlots] = useState<Slot[]>([]);
   const [existingBooking, setExistingBooking] = useState<ExistingBooking | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
+  const [tappedSlotId, setTappedSlotId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [timeLeft, setTimeLeft] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
 
   // Booking form — pre-fill from search params (multi-child flow)
   const [parentName, setParentName] = useState(searchParams.get('parentName') || '');
@@ -81,6 +84,53 @@ export default function BookPage({ params }: { params: Promise<{ studentId: stri
     }
     lookup();
   }, [studentId, router]);
+
+  // 5-minute booking timer
+  useEffect(() => {
+    if (selectedSlot) {
+      setTimeLeft(300);
+      timerRef.current = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timerRef.current);
+            setSelectedSlot(null);
+            setError('Your slot selection has expired. Please choose again.');
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timerRef.current);
+    } else {
+      clearInterval(timerRef.current);
+      setTimeLeft(0);
+    }
+  }, [selectedSlot]);
+
+  // Poll slot availability every 10 seconds
+  useEffect(() => {
+    if (!student || existingBooking) return;
+    const poll = setInterval(async () => {
+      try {
+        const res = await fetch('/api/students/lookup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ studentId: decodeURIComponent(studentId) }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setSlots(data.slots);
+          // If selected slot was taken, deselect it
+          if (selectedSlot && !data.slots.find((s: Slot) => s.id === selectedSlot.id && s.isAvailable)) {
+            setSelectedSlot(null);
+            setError('The slot you selected is no longer available. Please choose another.');
+          }
+        }
+      } catch { /* silent fail for polling */ }
+    }, 10000);
+    return () => clearInterval(poll);
+  }, [student, existingBooking, studentId, selectedSlot]);
+
 
   async function handleBook(e: React.FormEvent) {
     e.preventDefault();
@@ -295,8 +345,8 @@ export default function BookPage({ params }: { params: Promise<{ studentId: stri
                   <button
                     key={slot.id}
                     disabled={!slot.isAvailable}
-                    onClick={() => setSelectedSlot(slot)}
-                    className={`slot-available py-3 px-2 rounded-lg text-sm font-medium border transition-all ${
+                    onClick={() => { setSelectedSlot(slot); setTappedSlotId(slot.id); setTimeout(() => setTappedSlotId(null), 200); }}
+                    className={`slot-available py-3 px-2 rounded-lg text-sm font-medium border transition-all ${tappedSlotId === slot.id ? 'animate-slot-pop' : ''} ${
                       !slot.isAvailable
                         ? 'bg-muted-bg text-muted border-card-border cursor-not-allowed'
                         : selectedSlot?.id === slot.id
@@ -316,6 +366,11 @@ export default function BookPage({ params }: { params: Promise<{ studentId: stri
                 <h3 className="font-semibold text-heading mb-1">Complete Your Booking</h3>
                 <p className="text-sm text-secondary mb-4">
                   Selected time: {formatTime(selectedSlot.startTime)} - {formatTime(selectedSlot.endTime)}
+                  {timeLeft > 0 && (
+                    <span className={`ml-2 font-mono font-medium ${timeLeft <= 60 ? 'text-danger' : 'text-muted'}`}>
+                      ({Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')})
+                    </span>
+                  )}
                 </p>
 
                 <div className="space-y-4">

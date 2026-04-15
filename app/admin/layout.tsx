@@ -1,13 +1,27 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { ToastProvider } from '@/app/components/Toast';
+
+interface SearchResult {
+  id: number;
+  studentId: string;
+  name: string;
+  year: string;
+  className: string;
+  bookingRef: string | null;
+}
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeEventId, setActiveEventId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [showSearch, setShowSearch] = useState(false);
+  const searchTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -35,6 +49,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       })
       .catch(() => router.push('/admin/login'));
   }, [isLoginPage, router]);
+
+  function onSearchChange(value: string) {
+    setSearchQuery(value);
+    clearTimeout(searchTimer.current);
+    if (value.trim().length < 2) { setSearchResults([]); setShowSearch(false); return; }
+    searchTimer.current = setTimeout(async () => {
+      const res = await fetch(`/api/admin/search?q=${encodeURIComponent(value)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSearchResults(data);
+        setShowSearch(true);
+      }
+    }, 300);
+  }
 
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -92,6 +120,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </Link>
           ))}
         </nav>
+        <div className="p-3 border-t border-white/10 relative">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => onSearchChange(e.target.value)}
+            onFocus={() => searchResults.length > 0 && setShowSearch(true)}
+            onBlur={() => setTimeout(() => setShowSearch(false), 200)}
+            placeholder="Search students..."
+            className="w-full px-3 py-2 bg-white/10 border border-white/10 rounded-lg text-sm text-white placeholder-white/40 focus:outline-none focus:bg-white/15 focus:border-white/20"
+          />
+          {showSearch && searchResults.length > 0 && (
+            <div className="absolute left-3 right-3 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 max-h-60 overflow-y-auto z-50">
+              {searchResults.map(r => (
+                <Link
+                  key={`${r.id}-${r.bookingRef}`}
+                  href={r.bookingRef ? `/booking/${r.bookingRef}` : '#'}
+                  onClick={() => { setShowSearch(false); setSearchQuery(''); setSidebarOpen(false); }}
+                  className="block px-3 py-2 hover:bg-gray-50 border-b border-gray-50 last:border-0"
+                >
+                  <p className="text-sm font-medium text-gray-900">{r.name}</p>
+                  <p className="text-xs text-gray-500">{r.year} - {r.className} &middot; ID: {r.studentId}{r.bookingRef ? ` · ${r.bookingRef}` : ' · No booking'}</p>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
           <button
             onClick={handleLogout}
@@ -113,9 +167,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
           <h2 className="font-semibold text-primary">Admin Panel</h2>
         </div>
-        <main className="p-6">
+        <main className="p-4 md:p-6">
           {children}
         </main>
+        <ToastProvider />
       </div>
     </div>
   );

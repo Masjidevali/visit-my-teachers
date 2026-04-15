@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { showToast } from '@/app/components/Toast';
+import { EmptyState } from '@/app/components/EmptyState';
 
 interface Event {
   id: number;
@@ -71,6 +73,21 @@ export default function EventsPage() {
     loadEvents();
   }
 
+  async function duplicateEvent(event: Event) {
+    const name = prompt('Name for the new event:', `${event.name} (Copy)`);
+    if (!name) return;
+    const res = await fetch('/api/events/duplicate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sourceEventId: event.id, name }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      showToast(`Event duplicated with ${data.classCount} classes`, 'success');
+      loadEvents();
+    }
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -115,41 +132,49 @@ export default function EventsPage() {
 
       <div className="space-y-3">
         {events.map(event => (
-          <div key={event.id} className="bg-white rounded-xl border border-gray-200 p-5 flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-gray-900">{event.name}</h3>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${event.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                  {event.isActive ? 'Active' : 'Inactive'}
-                </span>
+          <div key={event.id} className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-gray-900">{event.name}</h3>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${event.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                    {event.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mt-0.5">{event.academicYearName}</p>
               </div>
-              <p className="text-xs text-gray-500 mt-0.5">{event.academicYearName}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => toggleActive(event)}
-                className="px-3 py-1.5 text-xs border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                {event.isActive ? 'Deactivate' : 'Activate'}
-              </button>
-              <Link
-                href={`/admin/events/${event.id}`}
-                className="px-3 py-1.5 text-xs bg-primary text-white rounded-lg hover:bg-primary-light"
-              >
-                Manage
-              </Link>
-              <button
-                onClick={() => deleteEvent(event.id)}
-                className="px-3 py-1.5 text-xs text-red-600 border border-red-200 rounded-lg hover:bg-red-50"
-              >
-                Delete
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => toggleActive(event)}
+                  className="px-3 py-1.5 text-xs border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  {event.isActive ? 'Deactivate' : 'Activate'}
+                </button>
+                <Link
+                  href={`/admin/events/${event.id}`}
+                  className="px-3 py-1.5 text-xs bg-primary text-white rounded-lg hover:bg-primary-light"
+                >
+                  Manage
+                </Link>
+                <button
+                  onClick={() => duplicateEvent(event)}
+                  className="px-3 py-1.5 text-xs border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Duplicate
+                </button>
+                <button
+                  onClick={() => deleteEvent(event.id)}
+                  className="px-3 py-1.5 text-xs text-red-600 border border-red-200 rounded-lg hover:bg-red-50"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           </div>
         ))}
 
         {events.length === 0 && !showForm && (
-          <p className="text-gray-500 text-center py-8">No events created yet.</p>
+          <EmptyState icon="calendar" title="No events created yet" description="Create your first Visit-My-Teachers event to get started." />
         )}
       </div>
     </div>

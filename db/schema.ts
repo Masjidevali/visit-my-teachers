@@ -97,6 +97,13 @@ export const specialRequests = sqliteTable('special_requests', {
   updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
 });
 
+export const activityLog = sqliteTable('activity_log', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  action: text('action').notNull(),
+  detail: text('detail').notNull().default(''),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+});
+
 export const unbookedReminders = sqliteTable('unbooked_reminders', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   eventId: integer('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),

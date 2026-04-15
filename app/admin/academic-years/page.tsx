@@ -90,14 +90,15 @@ export default function AcademicYearsPage() {
 
       <div className="space-y-3">
         {years.map(year => (
-          <div key={year.id} className="bg-white rounded-xl border border-gray-200 p-5 flex items-center justify-between">
+          <div key={year.id} className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <h3 className="font-semibold text-gray-900">{year.name}</h3>
               <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${year.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                 {year.isActive ? 'Active' : 'Inactive'}
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={() => toggleActive(year)}
                 className="px-3 py-1.5 text-xs border border-gray-300 rounded-lg hover:bg-gray-50"
@@ -116,6 +117,7 @@ export default function AcademicYearsPage() {
               >
                 Delete
               </button>
+            </div>
             </div>
           </div>
         ))}

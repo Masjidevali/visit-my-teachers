@@ -166,25 +166,27 @@ export default function CheckinPage({ params }: { params: Promise<{ id: string }
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <Link href={`/admin/events/${eventId}`} className="text-sm text-gray-500 hover:text-gray-700">&larr; Back to Event</Link>
-          <h1 className="text-2xl font-bold text-gray-900 mt-1">Check-In</h1>
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <Link href={`/admin/events/${eventId}`} className="text-sm text-gray-500 hover:text-gray-700">&larr; Back to Event</Link>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mt-1">Check-In</h1>
+          </div>
+          <Link
+            href={`/checkin/${eventId}`}
+            target="_blank"
+            className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-light transition-colors self-start sm:self-auto"
+          >
+            Open Kiosk Mode
+          </Link>
         </div>
-        <Link
-          href={`/checkin/${eventId}`}
-          target="_blank"
-          className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-light transition-colors"
-        >
-          Open Kiosk Mode
-        </Link>
         <div className="flex items-center gap-3">
-          <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 text-center">
-            <p className="text-3xl font-bold text-accent">{checkedIn}</p>
+          <div className="flex-1 bg-white border border-gray-200 rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-center">
+            <p className="text-2xl sm:text-3xl font-bold text-accent">{checkedIn}</p>
             <p className="text-xs text-gray-500">of {total} checked in</p>
           </div>
-          <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 text-center">
-            <p className="text-3xl font-bold text-amber-600">{total - checkedIn}</p>
+          <div className="flex-1 bg-white border border-gray-200 rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-center">
+            <p className="text-2xl sm:text-3xl font-bold text-amber-600">{total - checkedIn}</p>
             <p className="text-xs text-gray-500">remaining</p>
           </div>
         </div>
@@ -260,7 +262,7 @@ export default function CheckinPage({ params }: { params: Promise<{ id: string }
         ) : (
           <div className="divide-y divide-gray-100">
             {filtered.map(b => (
-              <div key={b.id} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors">
+              <div key={b.id} className="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors gap-2">
                 <div className="flex items-center gap-3">
                   <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
                     b.checkedInAt ? 'bg-accent/15 text-accent' : 'bg-gray-100 text-gray-400'

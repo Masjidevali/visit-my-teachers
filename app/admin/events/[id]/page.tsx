@@ -2,6 +2,8 @@
 
 import { useState, useEffect, use, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { showToast } from '@/app/components/Toast';
+import { EmptyState } from '@/app/components/EmptyState';
 
 interface Event {
   id: number;
@@ -87,10 +89,12 @@ interface SpecialRequest {
 
 type Tab = 'classes' | 'students' | 'bookings' | 'unbooked' | 'requests' | 'export';
 
-function BookingsTab({ bookings, loadBookings, loadUnbooked }: { bookings: Booking[]; loadBookings: () => void; loadUnbooked: () => void }) {
+function BookingsTab({ bookings, loadBookings, loadUnbooked, eventId }: { bookings: Booking[]; loadBookings: () => void; loadUnbooked: () => void; eventId: string }) {
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
   const [editForm, setEditForm] = useState({ parentName: '', parentPhone: '', parentEmail: '', notes: '' });
   const [savingEdit, setSavingEdit] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
@@ -129,9 +133,49 @@ function BookingsTab({ bookings, loadBookings, loadUnbooked }: { bookings: Booki
     setDeletingId(null);
   }
 
+  async function bulkDelete() {
+    if (!confirm(`Delete ${selectedIds.size} booking(s)? This cannot be undone.`)) return;
+    setBulkDeleting(true);
+    const toDelete = bookings.filter(b => selectedIds.has(b.id));
+    for (const b of toDelete) {
+      await fetch('/api/bookings/admin', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: b.id, timeSlotId: b.timeSlotId }),
+      });
+    }
+    setSelectedIds(new Set());
+    setBulkDeleting(false);
+    loadBookings();
+    loadUnbooked();
+    showToast(`Deleted ${toDelete.length} booking(s)`, 'success');
+  }
+
   return (
     <div>
-      <h2 className="text-lg font-semibold mb-4">All Bookings ({bookings.length})</h2>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+        <h2 className="text-lg font-semibold">All Bookings ({bookings.length})</h2>
+        <div className="flex flex-wrap gap-2">
+          {bookings.length > 0 && (
+            <a
+              href={`/api/export/bookings-csv?eventId=${eventId}`}
+              className="px-3 py-1.5 text-xs border border-gray-300 rounded-lg hover:bg-gray-50 inline-flex items-center gap-1"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+              Export CSV
+            </a>
+          )}
+        {selectedIds.size > 0 && (
+          <button
+            onClick={bulkDelete}
+            disabled={bulkDeleting}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
+          >
+            {bulkDeleting ? 'Deleting...' : `Delete Selected (${selectedIds.size})`}
+          </button>
+        )}
+        </div>
+      </div>
 
       {/* Edit Modal */}
       {editingBooking && (
@@ -174,6 +218,9 @@ function BookingsTab({ bookings, loadBookings, loadUnbooked }: { bookings: Booki
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
+                <th className="px-4 py-3 w-10">
+                  <input type="checkbox" checked={bookings.length > 0 && selectedIds.size === bookings.length} onChange={e => setSelectedIds(e.target.checked ? new Set(bookings.map(b => b.id)) : new Set())} className="rounded border-gray-300" />
+                </th>
                 <th className="text-left px-4 py-3 font-medium text-gray-500">Time</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-500">Student</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-500">Class</th>
@@ -186,13 +233,16 @@ function BookingsTab({ bookings, loadBookings, loadUnbooked }: { bookings: Booki
             <tbody className="divide-y divide-gray-100">
               {bookings.map(b => (
                 <tr key={b.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">{b.startTime} - {b.endTime}</td>
-                  <td className="px-4 py-3 font-medium">{b.studentName}</td>
-                  <td className="px-4 py-3">{b.className}</td>
-                  <td className="px-4 py-3">{b.parentName}</td>
-                  <td className="px-4 py-3">{b.parentPhone}</td>
-                  <td className="px-4 py-3 font-mono text-xs">{b.bookingRef}</td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-3">
+                    <input type="checkbox" checked={selectedIds.has(b.id)} onChange={e => { const s = new Set(selectedIds); e.target.checked ? s.add(b.id) : s.delete(b.id); setSelectedIds(s); }} className="rounded border-gray-300" />
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">{b.startTime} - {b.endTime}</td>
+                  <td className="px-4 py-3 font-medium whitespace-nowrap">{b.studentName}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">{b.className}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">{b.parentName}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">{b.parentPhone}</td>
+                  <td className="px-4 py-3 font-mono text-xs whitespace-nowrap">{b.bookingRef}</td>
+                  <td className="px-4 py-3 text-right whitespace-nowrap">
                     {confirmDeleteId === b.id ? (
                       <span className="inline-flex gap-1">
                         <button onClick={() => deleteBooking(b)} disabled={deletingId === b.id} className="text-xs text-red-600 font-medium hover:underline disabled:opacity-50">
@@ -217,7 +267,7 @@ function BookingsTab({ bookings, loadBookings, loadUnbooked }: { bookings: Booki
           </table>
         </div>
         {bookings.length === 0 && (
-          <p className="text-center text-gray-500 py-8">No bookings yet.</p>
+          <EmptyState icon="clipboard" title="No bookings yet" description="Bookings will appear here once parents start booking slots." />
         )}
       </div>
     </div>
@@ -366,10 +416,10 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     });
     const data = await res.json();
     if (!res.ok) {
-      alert(data.error || 'Failed to generate slots');
+      showToast(data.error || 'Failed to generate slots', 'error');
       return;
     }
-    alert(`Generated ${data.count} slots (1 per student)`);
+    showToast(`Generated ${data.count} slots (1 per student)`, 'success');
     loadEventClasses();
   }
 
@@ -378,7 +428,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     const res = await fetch(`/api/time-slots?eventClassId=${ecId}`, { method: 'DELETE' });
     if (!res.ok) {
       const data = await res.json();
-      alert(data.error || 'Failed to remove slots');
+      showToast(data.error || 'Failed to remove slots', 'error');
       return;
     }
     loadEventClasses();
@@ -387,7 +437,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   async function generateAllSlots() {
     const classesWithoutSlots = eventClasses.filter(ec => ec.slotCount === 0);
     if (classesWithoutSlots.length === 0) {
-      alert('All classes already have slots generated.');
+      showToast('All classes already have slots generated.', 'info');
       return;
     }
     let total = 0;
@@ -402,7 +452,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         total += data.count;
       }
     }
-    alert(`Generated ${total} total slots across ${eventClasses.length} classes`);
+    showToast(`Generated ${total} total slots`, 'success');
     loadEventClasses();
   }
 
@@ -412,6 +462,11 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status, adminNotes }),
     });
+    loadRequests();
+  }
+
+  async function handleDeleteRequest(reqId: number) {
+    await fetch(`/api/special-requests/${reqId}`, { method: 'DELETE' });
     loadRequests();
   }
 
@@ -474,11 +529,11 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   return (
     <div>
       <button onClick={() => router.push('/admin/events')} className="text-sm text-gray-500 hover:text-gray-700 mb-2 block">&larr; Back to Events</button>
-      <div className="flex items-center justify-between mb-1">
-        <h1 className="text-2xl font-bold text-gray-900">{event.name}</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{event.name}</h1>
         <button
           onClick={() => router.push(`/admin/events/${event.id}/checkin`)}
-          className="px-4 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent-light transition-colors"
+          className="px-4 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent-light transition-colors self-start sm:self-auto"
         >
           Check In Mode
         </button>
@@ -505,9 +560,9 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
       {/* Classes Tab */}
       {activeTab === 'classes' && (
         <div>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <h2 className="text-lg font-semibold">Event Classes</h2>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {eventClasses.length > 0 && (() => {
                 const needSlots = eventClasses.filter(ec => ec.slotCount === 0).length;
                 const allGenerated = needSlots === 0;
@@ -558,7 +613,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               {selectedClassIds.size > 0 && (
                 <>
                   <h4 className="font-medium text-gray-700 text-sm mb-2">Default settings for selected classes ({selectedClassIds.size})</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1">Date</label>
                       <input type="date" required value={defaults.date} onChange={e => setDefaults({ ...defaults, date: e.target.value })}
@@ -606,7 +661,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                 {editingEcId === ec.id ? (
                   <form onSubmit={saveEditEventClass} className="p-4">
                     <h3 className="font-medium text-gray-900 mb-3">{ec.year} - {ec.name} {ec.teacherName && `(${ec.teacherName})`}</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">Date</label>
                         <input type="date" required value={editEcForm.date} onChange={e => setEditEcForm({ ...editEcForm, date: e.target.value })}
@@ -641,16 +696,16 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                     </div>
                   </form>
                 ) : (
-                  <div className="p-4 flex items-center justify-between">
-                    <div>
+                  <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="min-w-0">
                       <h3 className="font-medium text-gray-900">{ec.year} - {ec.name}</h3>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-gray-500 break-words">
                         {ec.teacherName && `${ec.teacherName} | `}{new Date(ec.date + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} | {ec.startTime} - {ec.endTime} | {ec.slotDuration}min slots
                         {ec.room && ` | Room: ${ec.room}`}
                         {!ec.showTeacher && ' | Teacher hidden'}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <button onClick={() => { setEditingEcId(ec.id); setEditEcForm({ date: ec.date, startTime: ec.startTime, slotDuration: ec.slotDuration, showTeacher: ec.showTeacher, room: ec.room }); }}
                         className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50">Edit</button>
                       {ec.slotCount > 0 ? (
@@ -671,7 +726,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               </div>
             ))}
             {eventClasses.length === 0 && !showClassPicker && (
-              <p className="text-gray-500 text-center py-8">No classes added yet. Click &quot;Add Classes&quot; to select from the academic year.</p>
+              <EmptyState icon="book" title="No classes added yet" description="Click 'Add Classes' above to select classes from the academic year." />
             )}
           </div>
         </div>
@@ -710,6 +765,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                       </h3>
                       {group.teacherName && <p className="text-xs text-gray-500">{group.teacherName}</p>}
                     </div>
+                    <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead className="bg-gray-50/50 border-b border-gray-100">
                         <tr>
@@ -726,11 +782,12 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                         ))}
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500 text-center py-8">No students found. Add classes to this event first, and ensure students are imported in the academic year.</p>
+              <EmptyState icon="users" title="No students found" description="Add classes to this event first, and ensure students are imported in the academic year." />
             );
           })()}
         </div>
@@ -738,7 +795,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
 
       {/* Bookings Tab */}
       {activeTab === 'bookings' && (
-        <BookingsTab bookings={bookings} loadBookings={loadBookings} loadUnbooked={loadUnbooked} />
+        <BookingsTab bookings={bookings} loadBookings={loadBookings} loadUnbooked={loadUnbooked} eventId={id} />
       )}
 
       {/* Unbooked Tab */}
@@ -749,12 +806,12 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
 
         return (
         <div>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <h2 className="text-lg font-semibold">
               Unbooked Students ({unbooked.unbooked} of {unbooked.total})
             </h2>
             {unbooked.students.length > 0 && (
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {selectedStudentIds.size > 0 && (
                   <button
                     onClick={() => handleSendUnbookedReminders(Array.from(selectedStudentIds))}
@@ -897,7 +954,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               </table>
             </div>
             {unbooked.students.length === 0 && (
-              <p className="text-center text-gray-500 py-8">All students have bookings!</p>
+              <EmptyState icon="check" title="All students have bookings!" description="Every student has been booked in." />
             )}
           </div>
         </div>
@@ -910,10 +967,10 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           <h2 className="text-lg font-semibold mb-4">Special Requests ({requests.length})</h2>
           <div className="space-y-3">
             {requests.map(req => (
-              <RequestCard key={req.id} request={req} onAction={handleRequestAction} />
+              <RequestCard key={req.id} request={req} onAction={handleRequestAction} onDelete={handleDeleteRequest} />
             ))}
             {requests.length === 0 && (
-              <p className="text-center text-gray-500 py-8">No special requests.</p>
+              <EmptyState icon="inbox" title="No special requests" description="Special arrangement requests from parents will appear here." />
             )}
           </div>
         </div>
@@ -998,8 +1055,9 @@ function ExportTab({ eventClasses, eventId }: { eventClasses: EventClass[]; even
   );
 }
 
-function RequestCard({ request, onAction }: { request: SpecialRequest; onAction: (id: number, status: 'approved' | 'rejected', notes: string) => void }) {
+function RequestCard({ request, onAction, onDelete }: { request: SpecialRequest; onAction: (id: number, status: 'approved' | 'rejected', notes: string) => void; onDelete: (id: number) => void }) {
   const [notes, setNotes] = useState(request.adminNotes || '');
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const typeLabels: Record<string, string> = {
     telephone_call: 'Telephone Call',
@@ -1047,7 +1105,7 @@ function RequestCard({ request, onAction }: { request: SpecialRequest; onAction:
             placeholder="Add a note..."
           />
           <div className="flex gap-2">
-            <button onClick={() => onAction(request.id, 'approved', notes)} className="px-4 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-red-700">
+            <button onClick={() => onAction(request.id, 'approved', notes)} className="px-4 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700">
               Approve
             </button>
             <button onClick={() => onAction(request.id, 'rejected', notes)} className="px-4 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700">
@@ -1056,6 +1114,19 @@ function RequestCard({ request, onAction }: { request: SpecialRequest; onAction:
           </div>
         </div>
       )}
+      <div className="mt-3 pt-3 border-t border-gray-100">
+        {!confirmDelete ? (
+          <button onClick={() => setConfirmDelete(true)} className="text-xs text-red-500 hover:underline">
+            Delete Request
+          </button>
+        ) : (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-red-600">Are you sure?</span>
+            <button onClick={() => onDelete(request.id)} className="text-xs text-red-600 font-medium hover:underline">Yes, delete</button>
+            <button onClick={() => setConfirmDelete(false)} className="text-xs text-gray-500 hover:underline">Cancel</button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

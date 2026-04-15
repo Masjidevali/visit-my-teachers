@@ -30,6 +30,13 @@ interface ClassStat {
   bookedStudents: number;
 }
 
+interface ActivityEntry {
+  id: number;
+  action: string;
+  detail: string;
+  createdAt: string;
+}
+
 interface RecentBooking {
   id: number;
   bookingRef: string;
@@ -65,6 +72,7 @@ export default function AdminDashboard() {
   const [selectedEvent, setSelectedEvent] = useState<number | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [detailedStats, setDetailedStats] = useState<DetailedStats | null>(null);
+  const [activityEntries, setActivityEntries] = useState<ActivityEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
@@ -81,11 +89,13 @@ export default function AdminDashboard() {
   const loadDetailedStats = useCallback(async (eventId: number) => {
     setRefreshing(true);
     try {
-      const res = await fetch(`/api/dashboard/stats?eventId=${eventId}`);
-      if (res.ok) {
-        setDetailedStats(await res.json());
-        setLastRefreshed(new Date());
-      }
+      const [statsRes, logRes] = await Promise.all([
+        fetch(`/api/dashboard/stats?eventId=${eventId}`),
+        fetch('/api/admin/activity-log?limit=10'),
+      ]);
+      if (statsRes.ok) setDetailedStats(await statsRes.json());
+      if (logRes.ok) setActivityEntries(await logRes.json());
+      setLastRefreshed(new Date());
     } finally {
       setRefreshing(false);
     }
@@ -112,9 +122,9 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           {lastRefreshed && (
             <span className="text-xs text-gray-400">
               {refreshing ? 'Refreshing...' : `Updated ${timeAgo(lastRefreshed.toISOString().slice(0, -1))}`}
@@ -245,7 +255,7 @@ export default function AdminDashboard() {
               <h3 className="text-sm font-semibold text-gray-900 mb-4">Recent Bookings</h3>
               <div className="space-y-3">
                 {detailedStats.recentBookings.map(b => (
-                  <div key={b.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                  <div key={b.id} className="flex flex-col sm:flex-row sm:items-center justify-between py-2 border-b border-gray-50 last:border-0 gap-2">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
                         <span className="text-xs font-bold text-primary">{b.studentName.charAt(0)}</span>
@@ -259,6 +269,24 @@ export default function AdminDashboard() {
                       <p className="text-xs font-mono text-primary">{b.bookingRef}</p>
                       <p className="text-xs text-gray-400">{timeAgo(b.createdAt)}</p>
                     </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Activity Log */}
+          {activityEntries.length > 0 && (
+            <div className="bg-white rounded-xl border border-gray-200 p-5 mb-8">
+              <h3 className="text-sm font-semibold text-gray-900 mb-4">Recent Admin Activity</h3>
+              <div className="space-y-2">
+                {activityEntries.map(entry => (
+                  <div key={entry.id} className="flex flex-col sm:flex-row sm:items-center justify-between py-1.5 border-b border-gray-50 last:border-0 gap-1">
+                    <div>
+                      <span className="text-sm font-medium text-gray-900">{entry.action}</span>
+                      {entry.detail && <span className="text-xs text-gray-500 ml-2">{entry.detail}</span>}
+                    </div>
+                    <span className="text-xs text-gray-400 shrink-0">{timeAgo(entry.createdAt)}</span>
                   </div>
                 ))}
               </div>

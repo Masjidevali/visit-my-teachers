@@ -207,7 +207,7 @@ export default function AcademicYearDetailPage({ params }: { params: Promise<{ i
 
           {showClassForm && (
             <form onSubmit={handleAddClass} className="bg-white rounded-xl border border-gray-200 p-6 mb-4">
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
                   <input type="text" required value={classForm.year} onChange={e => setClassForm({ ...classForm, year: e.target.value })}
@@ -268,27 +268,29 @@ export default function AcademicYearDetailPage({ params }: { params: Promise<{ i
             {classes.map(c => (
               <div key={c.id} className="bg-white rounded-xl border border-gray-200 p-4">
                 {editingClass === c.id ? (
-                  <div className="flex items-end gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                       <label className="block text-xs text-gray-500 mb-1">Year</label>
                       <input type="text" value={editClassForm.year} onChange={e => setEditClassForm({ ...editClassForm, year: e.target.value })}
-                        className="px-2 py-1.5 border border-gray-300 rounded-lg text-sm w-24" />
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm" />
                     </div>
                     <div>
                       <label className="block text-xs text-gray-500 mb-1">Name</label>
                       <input type="text" value={editClassForm.name} onChange={e => setEditClassForm({ ...editClassForm, name: e.target.value })}
-                        className="px-2 py-1.5 border border-gray-300 rounded-lg text-sm w-24" />
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm" />
                     </div>
                     <div>
                       <label className="block text-xs text-gray-500 mb-1">Teacher</label>
                       <input type="text" value={editClassForm.teacherName} onChange={e => setEditClassForm({ ...editClassForm, teacherName: e.target.value })}
-                        className="px-2 py-1.5 border border-gray-300 rounded-lg text-sm w-36" />
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm" />
                     </div>
-                    <button onClick={() => handleUpdateClass(c.id)} className="px-3 py-1.5 text-xs bg-primary text-white rounded-lg">Save</button>
-                    <button onClick={() => setEditingClass(null)} className="px-3 py-1.5 text-xs border border-gray-300 rounded-lg">Cancel</button>
+                    <div className="flex gap-2 sm:col-span-3">
+                      <button onClick={() => handleUpdateClass(c.id)} className="px-3 py-1.5 text-xs bg-primary text-white rounded-lg">Save</button>
+                      <button onClick={() => setEditingClass(null)} className="px-3 py-1.5 text-xs border border-gray-300 rounded-lg">Cancel</button>
+                    </div>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
                       <span className="font-medium text-gray-900">{c.year} - {c.name}</span>
                       {c.teacherName && <span className="text-gray-500 ml-2">({c.teacherName})</span>}

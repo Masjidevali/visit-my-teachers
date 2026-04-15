@@ -3,6 +3,7 @@ import { db } from '@/db';
 import { bookings, timeSlots, students, classes, eventClasses } from '@/db/schema';
 import { isAuthenticated } from '@/lib/auth';
 import { eq } from 'drizzle-orm';
+import { logActivity } from '@/lib/activity';
 
 export async function GET(request: Request) {
   if (!(await isAuthenticated())) {
@@ -83,6 +84,8 @@ export async function DELETE(request: Request) {
 
   // Delete the booking
   await db.delete(bookings).where(eq(bookings.id, id));
+
+  logActivity('Booking deleted', `Booking ID ${id} deleted by admin`);
 
   return NextResponse.json({ success: true });
 }

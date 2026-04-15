@@ -187,20 +187,23 @@ function ConfirmContent() {
           </a>
         </div>
 
-        <div className="flex flex-col gap-3">
+        <div className="bg-primary/5 border border-primary/15 rounded-xl p-4 mb-4 text-center">
+          <p className="text-sm font-semibold text-heading mb-1">Have another child at Madrasah Vali?</p>
+          <p className="text-xs text-secondary mb-3">Your details will be pre-filled for a faster booking.</p>
           <Link
             href={`/?parentName=${encodeURIComponent(booking.parentName)}&parentPhone=${encodeURIComponent(booking.parentPhone)}&parentEmail=${encodeURIComponent(booking.parentEmail)}`}
-            className="w-full bg-primary text-white py-3 px-4 rounded-lg font-medium hover:bg-primary-light transition-colors text-center"
+            className="inline-block bg-primary text-white py-2.5 px-6 rounded-lg text-sm font-medium hover:bg-primary-light transition-colors"
           >
             Book Another Child
           </Link>
-          <Link
-            href={`/booking/${booking.bookingRef}`}
-            className="w-full bg-muted-bg text-body py-3 px-4 rounded-lg font-medium hover:bg-hover-bg transition-colors text-center"
-          >
-            View Booking Details
-          </Link>
         </div>
+
+        <Link
+          href={`/booking/${booking.bookingRef}`}
+          className="block w-full bg-muted-bg text-body py-3 px-4 rounded-lg font-medium hover:bg-hover-bg transition-colors text-center text-sm"
+        >
+          View Booking Details
+        </Link>
       </div>
     </div>
   );
