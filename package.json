@@ -11,6 +11,7 @@
   "dependencies": {
     "@libsql/client": "^0.17.2",
     "@react-pdf/renderer": "^4.4.0",
+    "@vercel/analytics": "^2.0.1",
     "canvas-confetti": "^1.9.4",
     "drizzle-orm": "^0.45.2",
     "html5-qrcode": "^2.3.8",
