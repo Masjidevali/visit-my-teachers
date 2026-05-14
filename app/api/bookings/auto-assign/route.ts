@@ -106,7 +106,7 @@ export async function POST(request: Request) {
             time: `${formatTime(slot.startTime)} - ${formatTime(slot.endTime)}`,
             bookingRef,
             room: ec.room || undefined,
-            rescheduleUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://parents-evening.vercel.app'}/booking/${bookingRef}`,
+            rescheduleUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://vmt.madrasahvali.com'}/booking/${bookingRef}`,
           });
           emailsSent++;
         } catch {

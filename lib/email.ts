@@ -290,7 +290,7 @@ export async function sendUnbookedReminder(details: {
   eventName: string;
   cc?: string;
 }) {
-  const bookingUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://parents-evening.vercel.app'}/book/${encodeURIComponent(details.studentId)}`;
+  const bookingUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://vmt.madrasahvali.com'}/book/${encodeURIComponent(details.studentId)}`;
 
   const body = `
     ${GREETING()}
