@@ -113,6 +113,58 @@ function addSchedulePage(doc: jsPDF, data: ScheduleData, isFirst: boolean) {
   doc.setTextColor(0);
 }
 
+function addCoverPage(doc: jsPDF, room: string, schedulesInRoom: ScheduleData[], isFirst: boolean) {
+  if (!isFirst) doc.addPage();
+
+  const eventName = schedulesInRoom[0]?.class.eventName || '';
+  const eventDate = schedulesInRoom[0]?.class.eventDate || '';
+
+  // Brand header — same coordinates as addSchedulePage
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Madrasah Vali - Visit-My-Teachers', 14, 18);
+
+  doc.setFontSize(12);
+  doc.text(eventName, 14, 26);
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  if (eventDate) {
+    doc.text(`Date: ${formatDate(eventDate)}`, 14, 33);
+  }
+
+  doc.setDrawColor(0);
+  doc.setLineWidth(0.5);
+  doc.line(14, 36, 196, 36);
+
+  // Room title — centred
+  doc.setFontSize(36);
+  doc.setFont('helvetica', 'bold');
+  doc.text(room, 105, 80, { align: 'center' });
+
+  // Class count subtitle
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(120);
+  doc.text(`${schedulesInRoom.length} class${schedulesInRoom.length !== 1 ? 'es' : ''}`, 105, 92, { align: 'center' });
+  doc.setTextColor(0);
+
+  // Class list
+  doc.setFontSize(11);
+  let y = 110;
+  const pageBottom = 280;
+  for (const s of schedulesInRoom) {
+    if (y > pageBottom) break;
+    const left = `${s.class.year} - ${s.class.name}`;
+    const right = s.class.teacherName || '';
+    doc.setFont('helvetica', 'bold');
+    doc.text(left, 14, y);
+    doc.setFont('helvetica', 'normal');
+    if (right) doc.text(right, 196, y, { align: 'right' });
+    y += 8;
+  }
+}
+
 export function generateSchedulePDF(data: ScheduleData): Blob {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   addSchedulePage(doc, data, true);
@@ -121,7 +173,31 @@ export function generateSchedulePDF(data: ScheduleData): Blob {
 
 export function generateAllSchedulesPDF(schedules: ScheduleData[]): Blob {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  schedules.forEach((data, i) => addSchedulePage(doc, data, i === 0));
+
+  const groups = new Map<string, ScheduleData[]>();
+  for (const s of schedules) {
+    const room = (s.class.room || '').trim() || 'Unassigned';
+    const arr = groups.get(room) ?? [];
+    arr.push(s);
+    groups.set(room, arr);
+  }
+
+  const realRooms = Array.from(groups.keys())
+    .filter(r => r !== 'Unassigned')
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  const ordered = groups.has('Unassigned') ? [...realRooms, 'Unassigned'] : realRooms;
+
+  ordered.forEach((room, roomIdx) => {
+    const inRoom = (groups.get(room) ?? []).slice().sort((a, b) =>
+      a.class.year.localeCompare(b.class.year, undefined, { numeric: true }) ||
+      a.class.name.localeCompare(b.class.name),
+    );
+    addCoverPage(doc, room, inRoom, roomIdx === 0);
+    for (const data of inRoom) {
+      addSchedulePage(doc, data, false);
+    }
+  });
+
   return doc.output('blob');
 }
 
