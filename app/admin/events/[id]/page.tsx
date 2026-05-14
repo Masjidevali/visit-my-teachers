@@ -4,6 +4,7 @@ import { useState, useEffect, use, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { showToast } from '@/app/components/Toast';
 import { EmptyState } from '@/app/components/EmptyState';
+import { formatDate, formatTime } from '@/lib/utils';
 
 interface Event {
   id: number;
@@ -87,7 +88,7 @@ interface SpecialRequest {
   className: string;
 }
 
-type Tab = 'classes' | 'students' | 'bookings' | 'unbooked' | 'requests' | 'export';
+type Tab = 'classes' | 'students' | 'schedule' | 'bookings' | 'unbooked' | 'requests' | 'export';
 
 function BookingsTab({ bookings, loadBookings, loadUnbooked, eventId }: { bookings: Booking[]; loadBookings: () => void; loadUnbooked: () => void; eventId: string }) {
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
@@ -434,7 +435,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
 
   useEffect(() => {
     if (activeTab === 'students') loadStudents();
-    if (activeTab === 'bookings') loadBookings();
+    if (activeTab === 'bookings' || activeTab === 'schedule') loadBookings();
     if (activeTab === 'unbooked') loadUnbooked();
     if (activeTab === 'requests') loadRequests();
   }, [activeTab, loadStudents, loadBookings, loadUnbooked, loadRequests]);
@@ -606,6 +607,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const tabs: { key: Tab; label: string }[] = [
     { key: 'classes', label: `Classes (${eventClasses.length})` },
     { key: 'students', label: 'Students' },
+    { key: 'schedule', label: 'Schedule' },
     { key: 'bookings', label: 'Bookings' },
     { key: 'unbooked', label: 'Unbooked' },
     { key: 'requests', label: 'Requests' },
@@ -878,6 +880,83 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           })()}
         </div>
       )}
+
+      {/* Schedule Tab */}
+      {activeTab === 'schedule' && (() => {
+        const byDate = new Map<string, EventClass[]>();
+        for (const ec of eventClasses) {
+          const arr = byDate.get(ec.date) ?? [];
+          arr.push(ec);
+          byDate.set(ec.date, arr);
+        }
+        const days = Array.from(byDate.entries())
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([date, ecs]) => [
+            date,
+            ecs.sort((a, b) =>
+              a.startTime.localeCompare(b.startTime) ||
+              a.year.localeCompare(b.year) ||
+              a.name.localeCompare(b.name),
+            ),
+          ] as const);
+
+        return (
+          <div>
+            <h2 className="text-lg font-semibold mb-4">Schedule</h2>
+            {days.length === 0 ? (
+              <EmptyState icon="calendar" title="No classes scheduled" description="Add classes to this event from the Classes tab." />
+            ) : (
+              <div className="space-y-6">
+                {days.map(([date, ecs]) => (
+                  <div key={date}>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                      {formatDate(date)}
+                      <span className="ml-2 text-xs font-normal text-gray-500">
+                        ({ecs.length} class{ecs.length !== 1 ? 'es' : ''})
+                      </span>
+                    </h3>
+                    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead className="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                              <th className="text-left px-4 py-2 font-medium text-gray-500 text-xs">Class</th>
+                              <th className="text-left px-4 py-2 font-medium text-gray-500 text-xs">Teacher</th>
+                              <th className="text-left px-4 py-2 font-medium text-gray-500 text-xs">Time</th>
+                              <th className="text-left px-4 py-2 font-medium text-gray-500 text-xs">Room</th>
+                              <th className="text-right px-4 py-2 font-medium text-gray-500 text-xs">Slots</th>
+                              <th className="text-right px-4 py-2 font-medium text-gray-500 text-xs">Booked</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100">
+                            {ecs.map(ec => {
+                              const booked = bookings.filter(b =>
+                                b.year === ec.year && b.className === ec.name,
+                              ).length;
+                              return (
+                                <tr key={ec.id} className="hover:bg-gray-50">
+                                  <td className="px-4 py-2 font-medium whitespace-nowrap">{ec.year} - {ec.name}</td>
+                                  <td className="px-4 py-2 text-gray-600 whitespace-nowrap">{ec.teacherName || '—'}</td>
+                                  <td className="px-4 py-2 whitespace-nowrap">{formatTime(ec.startTime)} – {formatTime(ec.endTime)}</td>
+                                  <td className="px-4 py-2 whitespace-nowrap">{ec.room || '—'}</td>
+                                  <td className="px-4 py-2 text-right">{ec.slotCount}</td>
+                                  <td className="px-4 py-2 text-right whitespace-nowrap">
+                                    {ec.slotCount > 0 ? `${booked} / ${ec.slotCount}` : '—'}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Bookings Tab */}
       {activeTab === 'bookings' && (
