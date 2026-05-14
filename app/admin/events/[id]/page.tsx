@@ -381,6 +381,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const [sendingReminders, setSendingReminders] = useState(false);
   const [reminderResult, setReminderResult] = useState<{ sent: number; skippedNoEmail: number; skippedAlreadySent: number; errors: number } | null>(null);
   const [selectedStudentIds, setSelectedStudentIds] = useState<Set<number>>(new Set());
+  const [unbookedForceResend, setUnbookedForceResend] = useState(false);
 
   // Auto-assign state
   const [autoAssigning, setAutoAssigning] = useState(false);
@@ -551,16 +552,21 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   }
 
   async function handleSendUnbookedReminders(studentIds?: number[]) {
-    const count = studentIds ? studentIds.length : unbooked.students.filter(s => s.parentEmail && !s.reminderSentAt).length;
+    const count = studentIds
+      ? studentIds.length
+      : unbookedForceResend
+        ? unbooked.students.filter(s => s.parentEmail).length
+        : unbooked.students.filter(s => s.parentEmail && !s.reminderSentAt).length;
     const label = studentIds ? `${count} selected student${count !== 1 ? 's' : ''}` : 'all unbooked students with a parent email on file';
-    if (!confirm(`Send reminder emails to ${label}?`)) return;
+    const forceNote = unbookedForceResend ? ' (re-sending to everyone, including already reminded)' : '';
+    if (!confirm(`Send reminder emails to ${label}?${forceNote}`)) return;
     setSendingReminders(true);
     setReminderResult(null);
     try {
       const res = await fetch('/api/bookings/unbooked/send-reminders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ eventId: id, studentIds }),
+        body: JSON.stringify({ eventId: id, studentIds, force: unbookedForceResend }),
       });
       setReminderResult(await res.json());
       setSelectedStudentIds(new Set());
@@ -882,6 +888,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
       {activeTab === 'unbooked' && (() => {
         const emailableStudents = unbooked.students.filter(s => s.parentEmail);
         const unremindedStudents = emailableStudents.filter(s => !s.reminderSentAt);
+        const sendToAllCount = unbookedForceResend ? emailableStudents.length : unremindedStudents.length;
         const selectedEmailable = unbooked.students.filter(s => selectedStudentIds.has(s.id) && s.parentEmail);
 
         return (
@@ -891,7 +898,16 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               Unbooked Students ({unbooked.unbooked} of {unbooked.total})
             </h2>
             {unbooked.students.length > 0 && (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="inline-flex items-center gap-1.5 text-xs text-gray-600 select-none">
+                  <input
+                    type="checkbox"
+                    checked={unbookedForceResend}
+                    onChange={e => setUnbookedForceResend(e.target.checked)}
+                    className="rounded border-gray-300"
+                  />
+                  Force re-send
+                </label>
                 {selectedStudentIds.size > 0 && (
                   <button
                     onClick={() => handleSendUnbookedReminders(Array.from(selectedStudentIds))}
@@ -903,10 +919,10 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                 )}
                 <button
                   onClick={() => handleSendUnbookedReminders()}
-                  disabled={sendingReminders || unremindedStudents.length === 0}
+                  disabled={sendingReminders || sendToAllCount === 0}
                   className="px-4 py-2 border border-primary text-primary rounded-lg text-sm font-medium hover:bg-primary/5 disabled:opacity-50 transition-colors"
                 >
-                  {sendingReminders ? 'Sending...' : `Send to All (${unremindedStudents.length})`}
+                  {sendingReminders ? 'Sending...' : `Send to All (${sendToAllCount})`}
                 </button>
                 <button
                   onClick={() => setShowAutoAssignConfirm(true)}

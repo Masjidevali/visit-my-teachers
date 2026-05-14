@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { eventId, studentIds } = await request.json() as { eventId: number; studentIds?: number[] };
+  const { eventId, studentIds, force } = await request.json() as { eventId: number; studentIds?: number[]; force?: boolean };
 
   if (!eventId) {
     return NextResponse.json({ error: 'eventId required' }, { status: 400 });
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
       continue;
     }
 
-    if (student.reminderSentAt) {
+    if (!force && student.reminderSentAt) {
       skippedAlreadySent++;
       continue;
     }
@@ -88,10 +88,12 @@ export async function POST(request: Request) {
         cc: student.ccEmails || undefined,
       });
 
-      await db.insert(unbookedReminders).values({
-        eventId: parsedEventId,
-        studentId: student.id,
-      });
+      if (!student.reminderSentAt) {
+        await db.insert(unbookedReminders).values({
+          eventId: parsedEventId,
+          studentId: student.id,
+        });
+      }
 
       sent++;
 
