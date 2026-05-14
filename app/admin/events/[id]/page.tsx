@@ -97,6 +97,9 @@ function BookingsTab({ bookings, loadBookings, loadUnbooked, eventId }: { bookin
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [sendingReminders, setSendingReminders] = useState(false);
+  const [forceResend, setForceResend] = useState(false);
+  const [reminderResult, setReminderResult] = useState<{ sent: number; skippedAlreadySent: number; errors: number } | null>(null);
 
   function startEdit(b: Booking) {
     setEditingBooking(b);
@@ -151,11 +154,42 @@ function BookingsTab({ bookings, loadBookings, loadUnbooked, eventId }: { bookin
     showToast(`Deleted ${toDelete.length} booking(s)`, 'success');
   }
 
+  async function handleSendReminders(bookingIds?: number[]) {
+    const count = bookingIds ? bookingIds.length : bookings.length;
+    const label = bookingIds
+      ? `${count} selected booking${count !== 1 ? 's' : ''}`
+      : `all ${count} booked parent${count !== 1 ? 's' : ''} for this event`;
+    const forceNote = forceResend ? ' (re-sending to everyone, including already reminded)' : '';
+    if (!confirm(`Send reminder emails to ${label}?${forceNote}`)) return;
+    setSendingReminders(true);
+    setReminderResult(null);
+    try {
+      const res = await fetch('/api/bookings/send-reminders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventId, bookingIds, force: forceResend }),
+      });
+      if (res.ok) {
+        setReminderResult(await res.json());
+        setSelectedIds(new Set());
+        loadBookings();
+      } else {
+        setReminderResult({ sent: 0, skippedAlreadySent: 0, errors: 1 });
+        showToast('Failed to send reminders', 'error');
+      }
+    } catch {
+      setReminderResult({ sent: 0, skippedAlreadySent: 0, errors: 1 });
+      showToast('Failed to send reminders', 'error');
+    } finally {
+      setSendingReminders(false);
+    }
+  }
+
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <h2 className="text-lg font-semibold">All Bookings ({bookings.length})</h2>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {bookings.length > 0 && (
             <a
               href={`/api/export/bookings-csv?eventId=${eventId}`}
@@ -165,17 +199,63 @@ function BookingsTab({ bookings, loadBookings, loadUnbooked, eventId }: { bookin
               Export CSV
             </a>
           )}
-        {selectedIds.size > 0 && (
-          <button
-            onClick={bulkDelete}
-            disabled={bulkDeleting}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
-          >
-            {bulkDeleting ? 'Deleting...' : `Delete Selected (${selectedIds.size})`}
-          </button>
-        )}
+          {bookings.length > 0 && (
+            <label className="inline-flex items-center gap-1.5 text-xs text-gray-600 select-none">
+              <input
+                type="checkbox"
+                checked={forceResend}
+                onChange={e => setForceResend(e.target.checked)}
+                className="rounded border-gray-300"
+              />
+              Force re-send
+            </label>
+          )}
+          {selectedIds.size > 0 && (
+            <button
+              onClick={() => handleSendReminders(Array.from(selectedIds))}
+              disabled={sendingReminders}
+              className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-light disabled:opacity-50 transition-colors"
+            >
+              {sendingReminders ? 'Sending...' : `Send Reminder (${selectedIds.size})`}
+            </button>
+          )}
+          {bookings.length > 0 && (
+            <button
+              onClick={() => handleSendReminders()}
+              disabled={sendingReminders}
+              className="px-4 py-2 border border-primary text-primary rounded-lg text-sm font-medium hover:bg-primary/5 disabled:opacity-50 transition-colors"
+            >
+              {sendingReminders ? 'Sending...' : 'Send Reminders to All'}
+            </button>
+          )}
+          {selectedIds.size > 0 && (
+            <button
+              onClick={bulkDelete}
+              disabled={bulkDeleting}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
+            >
+              {bulkDeleting ? 'Deleting...' : `Delete Selected (${selectedIds.size})`}
+            </button>
+          )}
         </div>
       </div>
+
+      {reminderResult && (
+        <div className="mb-4 p-4 rounded-lg bg-gray-50 border border-gray-200 text-sm">
+          {reminderResult.sent > 0 && (
+            <p className="text-green-700 font-medium">Sent {reminderResult.sent} reminder{reminderResult.sent !== 1 ? 's' : ''} successfully.</p>
+          )}
+          {reminderResult.skippedAlreadySent > 0 && (
+            <p className="text-gray-600">{reminderResult.skippedAlreadySent} parent{reminderResult.skippedAlreadySent !== 1 ? 's' : ''} already reminded — skipped. Tick &lsquo;Force re-send&rsquo; to send again.</p>
+          )}
+          {reminderResult.errors > 0 && (
+            <p className="text-red-600">{reminderResult.errors} email{reminderResult.errors !== 1 ? 's' : ''} failed to send.</p>
+          )}
+          {reminderResult.sent === 0 && reminderResult.skippedAlreadySent === 0 && reminderResult.errors === 0 && (
+            <p className="text-gray-600">No bookings matched.</p>
+          )}
+        </div>
+      )}
 
       {/* Edit Modal */}
       {editingBooking && (
