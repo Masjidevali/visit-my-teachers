@@ -147,7 +147,7 @@ function PDFContent({ eventId }: { eventId: string }) {
             <p><strong>Date:</strong> {new Date(classInfo.eventDate + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
             <p><strong>Class:</strong> {classInfo.year} - {classInfo.name}</p>
             <p><strong>Teacher:</strong> {classInfo.teacherName}</p>
-            {classInfo.room && <p><strong>Room:</strong> {classInfo.room}</p>}
+            {classInfo.room && <p><strong>Location:</strong> {classInfo.room}</p>}
           </div>
         </div>
 

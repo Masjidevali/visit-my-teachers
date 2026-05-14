@@ -225,7 +225,7 @@ export default function BookingPage({ params }: { params: Promise<{ ref: string 
               </div>
               {booking.room && (
                 <div className="flex justify-between py-2 border-b border-card-border">
-                  <span className="text-secondary">Room</span>
+                  <span className="text-secondary">Location</span>
                   <span className="font-medium text-heading">{booking.room}</span>
                 </div>
               )}

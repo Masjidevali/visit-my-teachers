@@ -68,7 +68,7 @@ function addSchedulePage(doc: jsPDF, data: ScheduleData, isFirst: boolean) {
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   const info = [`Date: ${formatDate(cls.eventDate)}`, `Class: ${cls.year} - ${cls.name}`, `Teacher: ${cls.teacherName}`];
-  if (cls.room) info.push(`Room: ${cls.room}`);
+  if (cls.room) info.push(`Location: ${cls.room}`);
   doc.text(info.join('    |    '), 14, 33);
 
   // Line under header

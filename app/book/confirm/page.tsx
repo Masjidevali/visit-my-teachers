@@ -112,7 +112,7 @@ function ConfirmContent() {
             </div>
             {booking.room && (
               <div className="flex justify-between">
-                <span className="text-secondary">Room:</span>
+                <span className="text-secondary">Location:</span>
                 <span className="font-medium text-heading">{booking.room}</span>
               </div>
             )}

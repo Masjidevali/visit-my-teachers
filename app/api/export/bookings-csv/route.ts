@@ -41,7 +41,7 @@ export async function GET(request: Request) {
     .where(eq(eventClasses.eventId, parseInt(eventId)))
     .orderBy(classes.year, classes.name, timeSlots.startTime);
 
-  const headers = ['Booking Ref', 'Student ID', 'Student Name', 'Year', 'Class', 'Teacher', 'Parent Name', 'Parent Phone', 'Parent Email', 'Date', 'Start Time', 'End Time', 'Room', 'Notes', 'Booked At'];
+  const headers = ['Booking Ref', 'Student ID', 'Student Name', 'Year', 'Class', 'Teacher', 'Parent Name', 'Parent Phone', 'Parent Email', 'Date', 'Start Time', 'End Time', 'Location', 'Notes', 'Booked At'];
 
   const csvRows = [
     headers.join(','),

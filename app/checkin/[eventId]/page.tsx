@@ -292,7 +292,7 @@ export default function KioskPage({ params }: { params: Promise<{ eventId: strin
               </div>
               {result.room && (
                 <div className="flex justify-between">
-                  <span className="text-secondary text-sm">Room</span>
+                  <span className="text-secondary text-sm">Location</span>
                   <span className="font-semibold text-heading">{result.room}</span>
                 </div>
               )}
@@ -321,7 +321,7 @@ export default function KioskPage({ params }: { params: Promise<{ eventId: strin
               </div>
               {result.room && (
                 <div className="flex justify-between">
-                  <span className="text-secondary text-sm">Room</span>
+                  <span className="text-secondary text-sm">Location</span>
                   <span className="font-semibold text-heading">{result.room}</span>
                 </div>
               )}

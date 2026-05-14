@@ -718,7 +718,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Room (optional)</label>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Location (optional)</label>
                       <input type="text" value={defaults.room} onChange={e => setDefaults({ ...defaults, room: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="Optional" />
                     </div>
@@ -766,7 +766,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Room</label>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Location</label>
                         <input type="text" value={editEcForm.room} onChange={e => setEditEcForm({ ...editEcForm, room: e.target.value })}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
                       </div>
@@ -789,7 +789,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                       <h3 className="font-medium text-gray-900">{ec.year} - {ec.name}</h3>
                       <p className="text-sm text-gray-500 break-words">
                         {ec.teacherName && `${ec.teacherName} | `}{new Date(ec.date + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} | {ec.startTime} - {ec.endTime} | {ec.slotDuration}min slots
-                        {ec.room && ` | Room: ${ec.room}`}
+                        {ec.room && ` | Location: ${ec.room}`}
                         {!ec.showTeacher && ' | Teacher hidden'}
                       </p>
                     </div>
@@ -923,7 +923,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                               <th className="text-left px-4 py-2 font-medium text-gray-500 text-xs">Class</th>
                               <th className="text-left px-4 py-2 font-medium text-gray-500 text-xs">Teacher</th>
                               <th className="text-left px-4 py-2 font-medium text-gray-500 text-xs">Time</th>
-                              <th className="text-left px-4 py-2 font-medium text-gray-500 text-xs">Room</th>
+                              <th className="text-left px-4 py-2 font-medium text-gray-500 text-xs">Location</th>
                               <th className="text-right px-4 py-2 font-medium text-gray-500 text-xs">Slots</th>
                               <th className="text-right px-4 py-2 font-medium text-gray-500 text-xs">Booked</th>
                             </tr>

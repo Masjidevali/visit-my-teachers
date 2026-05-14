@@ -109,7 +109,7 @@ export async function sendBookingConfirmation(details: {
     ...(details.teacherName ? [{ label: 'Teacher', value: details.teacherName }] : []),
     { label: 'Date', value: details.date },
     { label: 'Time', value: details.time },
-    ...(details.room ? [{ label: 'Room', value: details.room }] : []),
+    ...(details.room ? [{ label: 'Location', value: details.room }] : []),
     { label: 'Booking Ref', value: details.bookingRef, style: 'font-family:monospace;font-size:16px;font-weight:700;color:#007BCB;' },
   ];
 
@@ -208,7 +208,7 @@ export async function sendBookingReminder(details: {
     ...(details.teacherName ? [{ label: 'Teacher', value: details.teacherName }] : []),
     { label: 'Date', value: details.date },
     { label: 'Time', value: details.time },
-    ...(details.room ? [{ label: 'Room', value: details.room }] : []),
+    ...(details.room ? [{ label: 'Location', value: details.room }] : []),
   ];
 
   const body = `
@@ -249,7 +249,7 @@ export async function sendRescheduleConfirmation(details: {
     { label: 'Date', value: details.date },
     { label: 'Previous Time', value: details.oldTime, style: 'color:#9ca3af;text-decoration:line-through;' },
     { label: 'New Time', value: details.newTime, style: 'color:#7BC800;font-weight:700;' },
-    ...(details.room ? [{ label: 'Room', value: details.room }] : []),
+    ...(details.room ? [{ label: 'Location', value: details.room }] : []),
     { label: 'Booking Ref', value: details.bookingRef, style: 'font-family:monospace;font-size:16px;font-weight:700;color:#007BCB;' },
   ];
 
@@ -328,7 +328,7 @@ export async function sendAutoAssignNotification(details: {
     ...(details.teacherName ? [{ label: 'Teacher', value: details.teacherName }] : []),
     { label: 'Date', value: details.date },
     { label: 'Time', value: details.time },
-    ...(details.room ? [{ label: 'Room', value: details.room }] : []),
+    ...(details.room ? [{ label: 'Location', value: details.room }] : []),
     { label: 'Booking Ref', value: details.bookingRef, style: 'font-family:monospace;font-size:16px;font-weight:700;color:#007BCB;' },
   ];
 
